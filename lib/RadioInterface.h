@@ -59,7 +59,7 @@ public:
 
     virtual String getIdent()
     {
-        return "Dummie";
+        return "DummieInterf";
     }
     bool isConnected()
     {

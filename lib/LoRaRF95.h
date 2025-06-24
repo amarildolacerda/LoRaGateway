@@ -4,7 +4,7 @@
 #ifdef RF95
 
 #include "RH_RF95.h"
-#include "config.h"
+// #include "config.h"
 #include "logger.h"
 #include "queue_message.h"
 #include "RadioInterface.h"
@@ -26,6 +26,11 @@ class LoRaRF95 : public RadioInterface
 {
 private:
 public:
+    String getIdent() override
+    {
+        String r = "RF95Serial (" + String(RX_PIN) + "," + String(TX_PIN) + ")";
+        return r;
+    }
     bool begin(const uint8_t terminal_Id, long band, bool promisc = true) override
     {
 #ifdef ESP8266

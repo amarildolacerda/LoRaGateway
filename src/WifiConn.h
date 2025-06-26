@@ -19,6 +19,7 @@
 
 #ifdef ALEXA
 #include "AlexaCom.h"
+#include "temperatura.h"
 #endif
 
 // WiFi related includes
@@ -78,8 +79,14 @@ private:
     Serial.println("Configuração salva. Reiniciando...");
     ESP.restart(); });
 
+#if defined(WIFI_SSID)
+        WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
+        if (WiFi.status() != WL_CONNECTED)
+            wifiManager->autoConnect("gateway-config");
+#else
         // Tenta conectar em background
-        wifiManager->autoConnect("Gateway-Config", "");
+        wifiManager->autoConnect("gateway-config", "");
+#endif
 
 #endif
     }
@@ -190,12 +197,18 @@ public:
 
         return systemState.isConnected;
     }
-
+#define ESPTemperature "ESPTemperature"
     void initAlexa()
     {
 #ifdef ALEXA
         alexaCom.setup(server, [this](unsigned char device_id, const char *device_name, bool state, unsigned char value)
                        { this->handleAlexaCallback(device_id, device_name, state, value); });
+#if defined(ESP32) && defined(GATEWAY)
+        // alexaCom.addTermostat("termostato");
+        alexaCom.addTemperature(ESPTemperature);
+        alexaCom.setTemperature(ESPTemperature, temperatureRead());
+
+#endif
 #endif
     }
 
@@ -212,6 +225,14 @@ public:
 
 #ifdef ALEXA
         alexaCom.loop();
+#if defined(ESP32) && defined(GATEWAY)
+        static long temperaturaUpdate = 0;
+        if (millis() - temperaturaUpdate > 30000)
+        {
+            temperaturaUpdate = millis();
+            alexaCom.setTemperature(ESPTemperature, temperatureRead());
+        }
+#endif
 #endif
 
 #ifdef WS

@@ -111,6 +111,11 @@ public:
     {
         return LoRa.packetSnr();
     }
+    String getIdent() override
+    {
+        String r = "LoRa32( cs:" + String(csPin) + " rst:" + String(resetPin) + " irq:" + String(irqPin) + " )";
+        return r;
+    }
 };
 
 #endif

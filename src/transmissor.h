@@ -103,6 +103,8 @@ public:
 
     // Removed unused variable discoveryUpdate
     bool mudouEstado = true;
+    // ... existing code ...
+
     void loop()
     {
         systemState.handle();
@@ -123,6 +125,9 @@ public:
 
         if (mudouEstado || millis() - lastSendTime > timeUpdate)
         {
+#ifdef DEBUG_ON
+            Logger::debug("State changed or time update condition met. Sending ping/status. Time since last send: %ld ms", millis() - lastSendTime);
+#endif
             if (systemState.isGateway)
             {
                 sendPing();
@@ -136,10 +141,13 @@ public:
             lastSendTime = millis(); // timestamp the message
             mudouEstado = false;
         }
-        //     static long receiveUpdate = 0;
+
         MessageRec rec;
         if (loraCom.processIncoming(rec))
         {
+#ifdef DEBUG_ON
+            Logger::debug("Received a message: from %d, id %d, event %s, value %s", rec.from, rec.id, rec.event, rec.value);
+#endif
             handleReceived(rec);
         }
 
@@ -150,6 +158,9 @@ public:
                 static long discUpdate = 0;
                 if (millis() - discUpdate > 30000)
                 {
+#ifdef DEBUG_ON
+                    Logger::debug("Discovering devices. Sending presentation.");
+#endif
                     loraCom.sendPresentation(0xFF);
                     discUpdate = millis();
                 }
@@ -159,12 +170,10 @@ public:
         updateDisplay();
         systemState.isRunning = false;
 
-// montar um logger INFO para informar a memoria livre
 #if defined(ESP32) || defined(ESP8266)
         static long freeUpdated = 0;
         if (millis() - freeUpdated > 30000)
         {
-
             Logger::info("Memoria Livre: %d", ESP.getFreeHeap());
             freeUpdated = millis();
         }
@@ -225,7 +234,7 @@ public:
         deviceInfo.updateState(rec.from, status);
 #endif
 #ifdef ALEXA
-        if (rec.from != 0xFF)
+        if (rec.from != 0xFF && rec.from != 0xFE)
         {
             if (alexaCom.indexOf(rec.from) < 0)
                 alexaCom.addDevice(rec.from, String(rec.from).c_str());
@@ -242,6 +251,10 @@ public:
 #endif
         stats.rxSuccess++;
         Logger::log(LogLevel::RECEIVE, "Handled from %d:%d, %s|%s", rec.from, rec.id, rec.event, rec.value);
+
+#ifdef DEBUG_ON
+        Logger::debug("Handling event %s from device %d", rec.event, rec.from);
+#endif
 
         if (systemState.isGateway)
         {
@@ -328,7 +341,7 @@ public:
             ackNak(rec.from, true, rec.id);
             deviceInfo.updateDevice(rec.from, rec.value, false, loraCom.packetRssi());
 #ifdef ALEXA
-            if (rec.to != 0xFF)
+            if (rec.to != 0xFF && rec.to != 0xFE)
                 alexaCom.addDevice(rec.from, String(rec.value).c_str());
 #endif
 #else
@@ -339,6 +352,7 @@ public:
         }
         ackNak(rec.from, true, rec.id);
     }
-};
 
+    // ... existing code ...
+};
 static App app;

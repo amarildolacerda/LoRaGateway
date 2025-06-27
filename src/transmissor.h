@@ -61,7 +61,7 @@ public:
         Serial.begin(Config::SERIAL_BAUD); // initialize serial
         while (!Serial)
             ;
-        Serial.println("Iniciando");
+        Serial.println("\nIniciando");
         initPerif();
 
         systemState.terminalId = TERMINAL_ID;
@@ -85,7 +85,7 @@ public:
         initNet();
 
         systemState.isInitialized = loraCom.isConnected();
-        Serial.println("Radio started");
+        Serial.println("\nRadio started");
         String ident = "Radio duplex " + loraCom.getIdent();
         ident += " Term: %d %s";
         Logger::info(ident.c_str(), TERMINAL_ID, TERMINAL_NAME);

@@ -1,16 +1,15 @@
-#if !defined(UDP_INTERFACE_H) && defined(ASYNC_WS)
+#if !defined(UDP_INTERFACE_H) && defined(RADIO_UDP)
 #define UDP_INTERFACE_H
 
 #include <RadioInterface.h>
-#include <ESPAsyncUDP.h>
-// #include <WiFiUdp.h>
+#include <WiFiUdp.h>
 #include "logger.h"
 #include "stats.h"
 
 class RadioUDP : public RadioInterface
 {
 private:
-    AsyncUDP udp;
+    WiFiUDP udp;
     uint16_t _localPort;
     IPAddress _broadcastIP;
     bool _isServer;
@@ -22,6 +21,12 @@ public:
         _broadcastIP = IPAddress(255, 255, 255, 255);
     }
 
+    void broadcastTo(char *message, size_t size, int16_t _localPort)
+    {
+        udp.beginPacket(_broadcastIP, _localPort);
+        udp.write(message,size);
+        udp.endPacket();
+    }
     bool sendMessage(MessageRec &rec) override
     {
         if (!_initialized)
@@ -36,12 +41,12 @@ public:
             if (_isServer)
             {
                 // Servidor envia para broadcast
-                udp.broadcastTo((uint8_t *)message, result, _localPort);
+                broadcastTo(message, result, _localPort);
             }
             else
             {
                 // Cliente envia para servidor
-                udp.broadcastTo((uint8_t *)message, result, _localPort);
+                broadcastTo(message, result, _localPort);
             }
 
             stats.txSuccess++;
@@ -53,7 +58,35 @@ public:
 
     bool receiveMessage() override
     {
-        // O recebimento é tratado no callback do AsyncUDP
+        size_t size = udp.parsePacket();
+        if (size == 0)
+            return false;
+
+        char incomingPacket[255];
+        int len = udp.read(incomingPacket, 255);
+        if (len > 0)
+        {
+            incomingPacket[len] = '\0';
+            MessageRec rec;
+            bool result = rec.decode(incomingPacket, len);
+
+            if (!result && rec.from == terminalId)
+            {
+#ifdef DEBUG_ON
+                Logger::error("Pacote UDP mal formado");
+#endif
+                return false;
+            }
+
+            if (rec.from == terminalId)
+            {
+                return false; // skip messages from myself
+            }
+
+            addRxMessage(rec);
+            meshMessage(rec);
+        }
+
         return false;
     }
 
@@ -75,68 +108,17 @@ public:
     bool begin(const uint8_t terminal_Id, long band, bool promisc = true) override
     {
         terminalId = terminal_Id;
+        udp.begin(_localPort);
 
-        if (udp.listen(_localPort))
-        {
-            udp.onPacket([this](AsyncUDPPacket packet)
-                         { this->handleUDPPacket(packet); });
-
-            connected = true;
-            _initialized = true;
+        connected = true;
+        _initialized = true;
 
 #ifdef DEBUG_ON
-            Logger::info("UDP Interface iniciada na porta %d", _localPort);
+        Logger::info("UDP Interface iniciada na porta %d", _localPort);
 #endif
-
-            return true;
-        }
-
-#ifdef DEBUG_ON
-        Logger::error("Falha ao iniciar UDP na porta %d", _localPort);
-#endif
-
-        return false;
+        return true;
     }
 
-    void handleUDPPacket(AsyncUDPPacket &packet)
-    {
-        stats.rxCount++;
-
-        if (packet.length() >= MESSAGE_MAX_LEN)
-        {
-#ifdef DEBUG_ON
-            Logger::error("Pacote UDP muito grande: %d bytes", packet.length());
-#endif
-            return;
-        }
-
-        MessageRec rec;
-        char resp[MESSAGE_MAX_LEN] = {0};
-        memcpy(resp, packet.data(), packet.length());
-        Serial.println(resp + 5);
-        Serial.println(packet.length());
-        if (packet.length() < MESSAGE_MAX_LEN)
-        {
-            // Print message content starting from offset 5; adjust offset if necessary
-            bool result = rec.decode(resp, packet.length());
-
-            if (!result && rec.from == terminalId)
-            {
-#ifdef DEBUG_ON
-                Logger::error("Pacote UDP mal formado");
-#endif
-                return;
-            }
-
-            if (rec.from == terminalId)
-            {
-                return; // skip messages from myself
-            }
-
-            addRxMessage(rec);
-            meshMessage(rec);
-        }
-    }
     void setBroadcastIP(IPAddress ip)
     {
         _broadcastIP = ip;

@@ -12,6 +12,7 @@ BROADCAST_PORT = 1234  # Porta UDP para escutar broadcasts (deve corresponder ao
 SEND_INTERVAL = 5      # Intervalo entre envios de status
 message_id = 0
 state = "on"
+terminal_name = "term_udp"
 
 def format_message(message):
     """Formata a mensagem para exibição (hex e ASCII)."""
@@ -46,13 +47,13 @@ def listen_for_messages(udp_socket, term):
             # Responde conforme o payload
             message_id = (message_id + 1) % 256
             if "ping" in payload:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{pong|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{pong|"+terminal_name.encode()+b"}\n"
             elif "pub" in payload:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{pub|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{pub|"+terminal_name.encode()+b"}\n"
             elif "ack" in payload:
                 continue   
             else:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|"+terminal_name.encode()+b"}\n"
 
             udp_socket.sendto(response, addr)
             print(Fore.MAGENTA + f"Enviado -> {format_message(response)}")

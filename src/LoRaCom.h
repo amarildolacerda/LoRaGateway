@@ -4,6 +4,7 @@
 #include "config.h"
 #include "SystemState.h"
 #include "app_messages.h"
+#include "RadioInterface.h"
 #ifdef WS
 #include "ExtraQueue.h"
 #endif

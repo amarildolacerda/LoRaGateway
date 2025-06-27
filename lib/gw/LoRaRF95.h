@@ -13,7 +13,7 @@
 
 #ifdef ESP8266
 
-static RH_RF95<HardwareSerial> rf95(Serial);
+extern RH_RF95<HardwareSerial> rf95;
 
 #else
 

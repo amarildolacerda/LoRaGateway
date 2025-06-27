@@ -1,6 +1,20 @@
 // implementa transmissor ou reception com base em -DRECEPTION ou -DTRANSMISSOR
+#ifdef RESET
+#include "ESPAsyncWiFiManager.h"
+static AsyncWebServer server(80);
+static DNSServer dns;
+AsyncWiFiManager wf(&server, &dns);
 
-#ifdef TEST
+void setup()
+{
+    Serial.begin(115200);
+    wf.resetSettings();
+    Serial.println("mudar direteirva RESET para recompilas");
+}
+void loop()
+{
+}
+#elif TEST
 #include "Arduino.h"
 #include "ESPAsyncWiFiManager.h"
 #include "ESPAsyncWebServer.h"

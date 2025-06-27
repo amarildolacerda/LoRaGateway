@@ -25,6 +25,7 @@
 // WiFi related includes
 #ifdef WIFIMANAGER
 #include <LocalWiFiManager.h>
+// #include "WiFiManager.h"
 #else
 #include "ESPAsyncWiFiManager.h"
 #endif
@@ -61,11 +62,25 @@ private:
     void initWiFi()
     {
 #ifdef WIFIMANAGER
-        wifiManager->autoConnect(); //("kcasa", "3938373635");
+
+#if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
+        WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
+        static int8_t attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20)
+        {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+        }
+        if (WiFi.status() != WL_CONNECTED)
+#endif
+            wifiManager->autoConnect();
+
         systemState.isConnected = WiFi.isConnected();
+        return;
 #else
         WiFi.mode(WIFI_AP_STA);
-        wifiManager->setConnectTimeout(20);       // Tempo de tentativa de conexão
+        wifiManager->setConnectTimeout(40);       // Tempo de tentativa de conexão
         wifiManager->setConfigPortalTimeout(180); // 3 minutos no modo AP
 
         wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
@@ -79,13 +94,21 @@ private:
     Serial.println("Configuração salva. Reiniciando...");
     ESP.restart(); });
 
-#if defined(WIFI_SSID)
+#if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
         WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
+        static int8_t attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20)
+        {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+        }
         if (WiFi.status() != WL_CONNECTED)
-            wifiManager->autoConnect("gateway-config");
+            wifiManager->autoConnect("gatewayConfig", "123456780");
 #else
         // Tenta conectar em background
-        wifiManager->autoConnect("gateway-config", "");
+        wifiManager->startConfigPortalModeless("gatewayConfig", "123456780");
+        // wifiManager->autoConnect("gatewayConfig", "");
 #endif
 
 #endif
@@ -122,7 +145,7 @@ public:
     WiFiConn(AsyncWebServer *srv, DNSServer *dnsServer) : server(srv), dns(dnsServer)
     {
 #ifdef WIFIMANAGER
-        wifiManager = new WiFiManager(srv, dns);
+        wifiManager = new WiFiManager(server, dns);
 #else
         wifiManager = new AsyncWiFiManager(server, dns);
 #endif
@@ -150,8 +173,8 @@ public:
 
     void changeNetwork()
     {
-        WiFi.disconnect();
-        wifiManager->startConfigPortal("ESP32-Config");
+        // WiFi.disconnect();
+        //  wifiManager->startConfigPortal("ESP32-Config");
     }
     bool begin()
     {
@@ -214,7 +237,9 @@ public:
 
     void resetWifi()
     {
+#ifdef ESP32
         wifiManager->resetSettings();
+#endif
     }
     void loop()
     {

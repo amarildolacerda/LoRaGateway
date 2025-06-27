@@ -132,9 +132,9 @@ void AlexaCom::loop()
     static long updateDiscovery = 0;
     if (millis() - updateDiscovery > 60000)
     {
-        alexa.triggerDiscovery();
+        // alexa.triggerDiscovery();
         updateDiscovery = millis();
-        alexa.setThermostatStateByName("termostato", true, temperatureRead(), "heat");
+        // alexa.setThermostatStateByName("termostato", true, temperatureRead(), "heat");
     }
 #endif
 }
@@ -159,21 +159,23 @@ void AlexaCom::updateStateAlexa(const uint8_t tid, const bool value)
 
 void AlexaCom::addTermostat(String name)
 {
-    alexa.addThermostat(name.c_str());
-    alexa.onSetThermostat([](unsigned char a, const char *b, bool c, unsigned char d, const char *e)
-                          { Serial.printf("Alexa diz termostato: %s: %s,%s, %s \n", a, b, d, e); });
-    isTermostat = true;
+    // alexa.addThermostat(name.c_str());
+    // alexa.onSetThermostat([](unsigned char a, const char *b, bool c, unsigned char d, const char *e)
+    //{
+    //    Serial.printf("Alexa diz termostato: %s: %s,%s, %s \n", a, b, d, e);
+    //});
+    // isTermostat = true;
 }
 
 void AlexaCom::addTemperature(String name)
 {
-    alexa.addTemperatureSensor(name.c_str());
-    alexa.onSetTemperature([](unsigned char id, const char *name, float temp)
-                           { Serial.printf("Alexa diz temperatura %d, %s, %.1f", id, name, temp); });
+    // alexa.addTemperatureSensor(name.c_str());
+    // alexa.onSetTemperature([](unsigned char id, const char *name, float temp)
+    //                        { Serial.printf("Alexa diz temperatura %d, %s, %.1f", id, name, temp); });
 }
 void AlexaCom::setTemperature(String name, float temp)
 {
-    alexa.setTemperature(name.c_str(), temp);
+    // alexa.setTemperature(name.c_str(), temp);
 }
 
 void AlexaCom::addDevice(uint8_t tid, const char *name)

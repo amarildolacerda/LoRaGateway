@@ -1,5 +1,5 @@
 
-#ifdef ALEXA
+#if defined(ALEXA) && defined(ASYNC_WS)
 /*
 
 FAUXMO ESP

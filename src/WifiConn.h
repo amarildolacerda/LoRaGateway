@@ -10,8 +10,9 @@
 
 #include "config.h"
 #include "SystemState.h"
+#ifdef WS
 #include "ws_logger.h"
-
+#endif
 // Conditional includes
 #ifdef GATEWAY
 #include "DeviceInfo.h"
@@ -25,12 +26,11 @@
 // WiFi related includes
 #ifdef WIFIMANAGER
 #include <LocalWiFiManager.h>
-// #include "WiFiManager.h"
 #else
 #include "ESPAsyncWiFiManager.h"
+#include "ESPAsyncWebServer.h"
 #endif
 
-#include "ESPAsyncWebServer.h"
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
 #else
@@ -47,11 +47,13 @@ class WiFiConn
 private:
     Timezone myTZ;
 
+#ifdef ASYNC_WS
     AsyncWebServer *server;
     DNSServer *dns;
+#endif
 
 #ifdef WIFIMANAGER
-    WiFiManager *wifiManager;
+    LocalWiFiManager *wifiManager;
 #else
     AsyncWiFiManager *wifiManager;
 #endif
@@ -142,10 +144,14 @@ public:
     }
 #endif
 
+#ifdef ASYNC_WS
     WiFiConn(AsyncWebServer *srv, DNSServer *dnsServer) : server(srv), dns(dnsServer)
+#else
+    WiFiConn()
+#endif
     {
 #ifdef WIFIMANAGER
-        wifiManager = new WiFiManager(server, dns);
+        wifiManager = new LocalWiFiManager();
 #else
         wifiManager = new AsyncWiFiManager(server, dns);
 #endif
@@ -213,11 +219,14 @@ public:
         // wifiManager->addRoots(server);
         htmlServer.begin();
 #else
+#ifdef ASYNC_WS
         server->begin();
 #endif
+#endif
 
+#ifdef ASYNC_WS
         WSLogger::initWs(*server);
-
+#endif
         return systemState.isConnected;
     }
 #define ESPTemperature "ESPTemperature"

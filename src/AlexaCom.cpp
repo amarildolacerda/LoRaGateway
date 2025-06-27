@@ -1,4 +1,4 @@
-#ifdef ALEXA
+#if defined( ALEXA) && defined(ASYNC_WS)
 #include "AlexaCom.h"
 #include "deviceinfo.h"
 #include "systemstate.h"

@@ -1,3 +1,4 @@
+#if defined(ASYNC_WS)
 #ifdef ESP32
 #include <WiFi.h>
 #else
@@ -90,3 +91,5 @@ private:
     WiFiUDP udp;
     BroadcastCallback callback;
 };
+
+#endif

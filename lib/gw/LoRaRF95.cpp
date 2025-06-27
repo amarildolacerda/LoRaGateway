@@ -1,3 +1,4 @@
+#if defined(RF95)
 #include <LoRaRF95.h>
 
 #ifdef RF95
@@ -12,4 +13,6 @@ SoftwareSerial SSerial(RX_PIN, TX_PIN); // RX, TX
 #define ShowSerial Serial
 RH_RF95<SoftwareSerial> rf95(COMSerial);
 #endif
+#endif
+
 #endif

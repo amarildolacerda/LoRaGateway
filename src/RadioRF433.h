@@ -1,4 +1,4 @@
-#ifndef RF433_INTERFACE_H
+#if !defined(RF433_INTERFACE_H) && defined(RF433)
 #define RF433_INTERFACE_H
 
 #include <RadioInterface.h>

@@ -1,4 +1,4 @@
-#ifndef LORATTGO_H
+#if !defined(LORATTGO_H) && defined(LORA)
 #define LORATTGO_H
 
 #ifdef TTGO

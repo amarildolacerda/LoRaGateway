@@ -1,4 +1,4 @@
-#ifndef UDP_INTERFACE_H
+#if !defined(UDP_INTERFACE_H) && defined(ASYNC_WS)
 #define UDP_INTERFACE_H
 
 #include <RadioInterface.h>

@@ -1,4 +1,4 @@
-#ifndef LORA32_H
+#if !defined(LORA32_H) && defined(LORA)
 #define LORA32_H
 
 #include <SPI.h> // include libraries

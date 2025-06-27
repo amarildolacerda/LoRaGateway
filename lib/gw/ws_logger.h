@@ -1,7 +1,7 @@
 #ifndef WSLOGGER_H
 #define WSLOGGER_H
 
-#ifdef WIFI
+#if defined(WIFI) && defined(ASYNC_WS)
 
 #include "Arduino.h"
 #include "logger.h"

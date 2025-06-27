@@ -1,4 +1,4 @@
-#ifndef RADIO_WIFI_ASYNC_H
+#if !defined(RADIO_WIFI_ASYNC_H) && defined(ASYNC_WS)
 #define RADIO_WIFI_ASYNC_H
 
 #include "Arduino.h"

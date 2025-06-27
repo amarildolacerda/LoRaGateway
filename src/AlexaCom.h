@@ -1,5 +1,5 @@
 
-#ifndef ALEXACOM_H
+#if !defined(ALEXACOM_H) && defined(ASYNC_WS)
 #define ALEXACOM_H
 
 #ifdef ALEXA

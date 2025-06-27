@@ -4,7 +4,10 @@
 
 #include "Arduino.h"
 #include <vector>
+
+#ifdef ALEXA
 #include "AlexaCom.h"
+#endif
 
 struct DeviceData
 {

@@ -1,5 +1,5 @@
 #include "ws_logger.h"
-#ifdef WIFI
+#if defined(WIFI) && defined(ASYNC_WS)
 
 #include <ESPAsyncWebServer.h>
 #ifdef ESP8266

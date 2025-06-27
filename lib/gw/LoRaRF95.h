@@ -1,4 +1,4 @@
-#ifndef LORARF95_H
+#if !defined(LORARF95_H) && defined(RF95)
 #define LORARF95_H
 
 #ifdef RF95

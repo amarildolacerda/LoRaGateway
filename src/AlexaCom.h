@@ -1,22 +1,33 @@
 
-#if !defined(ALEXACOM_H) && defined(ASYNC_WS)
+#if !defined(ALEXACOM_H) && defined(ALEXA)
 #define ALEXACOM_H
 
-#ifdef ALEXA
-#include <ESPAsyncWebServer.h>
 #include "logger.h"
+
+#ifdef ESP8266
+#include "ESP8266WebServer.h"
+#define WEBSERVER ESP8266WebServer
+#else
+
+#include "WebServer.h"
+#define WEBSERVER WebServer
+
+#endif
+
+#ifdef ALEXA
+#include "espalexa.h"
+#endif
+
+
 
 struct AlexaDeviceMap
 {
-    uint8_t tid;     // ID do dispositivo LoRa
-    uint8_t alexaId; // ID atribuído pela Espalexa
-    String name;     // Nome do dispositivo
-    String uniqueName()
+    uint8_t tid;      // ID do dispositivo LoRa
+    uint8_t alexaIdx; // ID atribuído pela Espalexa
+    String name;      // Nome do dispositivo
+    int uniqueName(char *rst, size_t len)
     {
-        return name + "_" + String(tid);
-        // String a = name + "." + String(tid);
-        // a.toLowerCase();
-        // return a;
+        return snprintf(rst, len, "term_%d", tid);
     }
     String uniqueId()
     {
@@ -38,11 +49,13 @@ private:
     bool isTermostat = false;
 
 public:
+    Espalexa alexa;
+
     std::vector<AlexaDeviceMap> alexaDevices;
     AlexaCallbackType alexaDeviceCallback;
     AlexaOnGetCallback onGetCallbackFn;
 
-    void setup(AsyncWebServer *server, AlexaCallbackType callback);
+    void setup(WEBSERVER *server, AlexaCallbackType callback);
     void onGetCallback(AlexaOnGetCallback fn)
     {
         onGetCallbackFn = fn;
@@ -55,7 +68,7 @@ public:
     void addTemperature(String name);
     void setTemperature(String name, float temp);
 
-    void addDevice(uint8_t tid, const char *name);
+    void addDevice(uint8_t tid, const String name);
     int indexOf(const uint8_t tid)
     {
         for (size_t i = 0; i < alexaDevices.size(); i++)
@@ -70,7 +83,7 @@ public:
     {
         for (size_t i = 0; i < alexaDevices.size(); i++)
         {
-            if (alexaDevices[i].alexaId == device_id)
+            if (alexaDevices[i].alexaIdx == device_id)
                 return i;
         }
         Logger::warn("Alexa, nao registrou o terminal %d", device_id);
@@ -81,5 +94,4 @@ public:
 
 extern AlexaCom alexaCom;
 
-#endif
 #endif

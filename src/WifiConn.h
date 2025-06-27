@@ -25,7 +25,8 @@
 
 // WiFi related includes
 #ifdef WIFIMANAGER
-#include <LocalWiFiManager.h>
+// #include <LocalWiFiManager.h>
+#include "WiFiManager.h"
 #else
 #include "ESPAsyncWiFiManager.h"
 #include "ESPAsyncWebServer.h"
@@ -50,10 +51,12 @@ private:
 #ifdef ASYNC_WS
     AsyncWebServer *server;
     DNSServer *dns;
+#else
+    ESP8266WebServer *server = nullptr;
 #endif
 
 #ifdef WIFIMANAGER
-    LocalWiFiManager *wifiManager;
+    WiFiManager *wifiManager;
 #else
     AsyncWiFiManager *wifiManager;
 #endif
@@ -64,6 +67,10 @@ private:
     void initWiFi()
     {
 #ifdef WIFIMANAGER
+
+        WiFi.mode(WIFI_AP_STA);
+        wifiManager->setConnectTimeout(40);       // Tempo de tentativa de conexão
+        wifiManager->setConfigPortalTimeout(180); // 3 minutos no modo AP
 
 #if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
         WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
@@ -151,7 +158,7 @@ public:
 #endif
     {
 #ifdef WIFIMANAGER
-        wifiManager = new LocalWiFiManager();
+        wifiManager = new WiFiManager();
 #else
         wifiManager = new AsyncWiFiManager(server, dns);
 #endif
@@ -184,6 +191,7 @@ public:
     }
     bool begin()
     {
+
         initWiFi();
 
         // Verificar conexão a cada 5 segundos

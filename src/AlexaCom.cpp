@@ -1,13 +1,7 @@
-#if defined( ALEXA) && defined(ASYNC_WS)
+#if defined(ALEXA)
 #include "AlexaCom.h"
 #include "deviceinfo.h"
 #include "systemstate.h"
-#include "ESPAsyncWebServer.h"
-
-#ifdef ALEXA
-#include "fauxmoESP.h"
-fauxmoESP alexa;
-#endif
 
 AlexaCom alexaCom;
 
@@ -25,17 +19,23 @@ void AlexaCom::aliveOffLineAlexa()
         {
             data = deviceInfo.getDevices()[idx];
             secs = deviceInfo.diffSeconds(data.lastSeen);
+            auto device = alexa.getDevice(dev.alexaIdx);
+
 #ifdef ALEXA
             if (secs >= 60 * 5)
             {
 #ifdef DEBUG_ON
-                Logger::debug("Device %s is offline for: %d seconds", dev.uniqueName().c_str(), secs);
+                Logger::debug("Device %s is offline for: %d seconds", dev.name, secs);
 #endif
-                alexa.setState(dev.uniqueName().c_str(), false, 0);
+                // alexa.setState(dev.uniqueName().c_str(), false, 0);
+                device->setState(false);
+                device->setValue(0);
             }
             else
             {
-                alexa.setState(dev.uniqueName().c_str(), data.state, 100);
+                //                alexa.setState(dev.uniqueName().c_str(), data.state, 100);
+                device->setState(data.state);
+                device->setValue(255);
             }
 #endif
         }
@@ -62,7 +62,7 @@ void AlexaCom::DoGetCallback(unsigned char device_id, const char *device_name)
     }
 }
 
-void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
+void AlexaCom::setup(WEBSERVER *server, AlexaCallbackType callback)
 {
     alexaDeviceCallback = callback;
 #ifdef ALEXA
@@ -71,8 +71,9 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
 #ifdef DEBUG_ON
     Logger::debug("Creating Alexa Server");
 #endif
-    alexa.createServer((server == NULL) ? true : false);
-    alexa.setPort(80);
+    alexa.begin(server);
+    // alexa.createServer((server == NULL) ? true : false);
+    // alexa.setPort(80);
 
     for (size_t i = 0; i < deviceInfo.size(); i++)
     {
@@ -87,13 +88,13 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
         map.tid = reg.tid;
         map.name = reg.name;
 
-        addDevice(reg.tid, map.uniqueName().c_str());
+        addDevice(reg.tid, map.name);
     }
 
-    alexa.onSetState([](unsigned char device_id, const char *device_name, bool state, unsigned char value)
-                     { alexaCom.DoCallback(device_id, device_name, state, value); });
-    alexa.onGetState([](unsigned char device_id, const char *device_name)
-                     { alexaCom.DoGetCallback(device_id, device_name); });
+    // alexa.onSetState([](unsigned char device_id, const char *device_name, bool state, unsigned char value)
+    //                  { alexaCom.DoCallback(device_id, device_name, state, value); });
+    // alexa.onGetState([](unsigned char device_id, const char *device_name)
+    //                  { alexaCom.DoGetCallback(device_id, device_name); });
 
 #ifdef WS
     server->onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -106,10 +107,10 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
                            if (alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body))
                                return; });
 #endif
-    alexa.addThermostat("termostato");
-    alexa.setPort(80);
-    alexa.enable(true);
-    alexa.triggerDiscovery();
+    // alexa.addThermostat("termostato");
+    // alexa.setPort(80);
+    // alexa.enable(true);
+    // alexa.triggerDiscovery();
     Logger::log(LogLevel::INFO, "Alexa Enable(true)");
 #endif
 }
@@ -119,16 +120,19 @@ void AlexaCom::renameDevice(const uint8_t tid, String name)
     size_t i = indexOf(tid);
     if (i >= 0)
     {
-        String oldname = alexaDevices[i].name;
-        alexaDevices[i].name = name;
-        alexa.renameDevice(alexaDevices[i].alexaId, name.c_str());
+        AlexaDeviceMap map = alexaDevices[i];
+        String oldname = map.name;
+        map.name = name;
+        char aname[16];
+        map.uniqueName(aname, 16);
+        // alexa.renameDevice(alexaDevices[i].alexaIdx, aname);
     }
 }
 
 void AlexaCom::loop()
 {
 #ifdef ALEXA
-    alexa.handle();
+    alexa.loop();
     static long updateDiscovery = 0;
     if (millis() - updateDiscovery > 60000)
     {
@@ -136,6 +140,26 @@ void AlexaCom::loop()
         updateDiscovery = millis();
         // alexa.setThermostatStateByName("termostato", true, temperatureRead(), "heat");
     }
+
+    static long alexaShow = 0;
+    if (millis() - alexaShow > 30000)
+    {
+        alexaShow = millis();
+        Serial.println("Alexa devices: ");
+        for (auto &dev : alexaDevices)
+        {
+            Serial.printf("tId: %d, id: %d, ", dev.tid, dev.alexaIdx);
+            EspalexaDevice *p = alexa.getDevice(dev.alexaIdx);
+            if (p)
+            {
+                Serial.printf("Nome: %s, State: %s, Value: %d \n", p->getName(), p->getState() ? "on" : "off", p->getValue());
+            }
+            else
+                (Serial.println(" nope "));
+        }
+        Serial.println();
+    }
+
 #endif
 }
 
@@ -147,13 +171,19 @@ void AlexaCom::updateStateAlexa(const uint8_t tid, const bool value)
     uint8_t id = indexOf(tid);
     if (id < 0)
         return;
-    uint8_t alexaId = alexaDevices[id].alexaId;
+    uint8_t alexaId = alexaDevices[id].alexaIdx;
 
 #ifdef ALEXA
-    String rsp = value ? "100" : "0";
+    String rsp = value ? "255" : "0";
     Logger::warn("Alexa::SetState(%d,%s,%s)", alexaId, String(value), rsp);
-    alexa.setState(alexaId, value, value ? 100 : 0);
-    Logger::info("Send to Alexa %d %s", alexaId, rsp);
+    // alexa.setState(alexaId, value, value ? 100 : 0);
+    auto device = alexa.getDevice(alexaId);
+    if (device)
+    {
+        device->setState(value);
+        device->setValue(value ? 255 : 0);
+        Logger::info("Send to Alexa %d %s", alexaId, device->getState() ? "on" : "off");
+    }
 #endif
 }
 
@@ -178,26 +208,32 @@ void AlexaCom::setTemperature(String name, float temp)
     // alexa.setTemperature(name.c_str(), temp);
 }
 
-void AlexaCom::addDevice(uint8_t tid, const char *name)
+void AlexaCom::addDevice(uint8_t tid, const String name)
 {
+    int pos = indexOf(tid);
+    if (pos >= 0)
+        return;
 #ifdef DEBUG_ON
     Logger::debug("Adding device with tid: %d and name: %s", tid, name);
 #endif
     AlexaDeviceMap map;
     map.tid = tid;
     map.name = name;
-    String aname = map.uniqueName();
+    char aname[16];
+    map.uniqueName(aname, 16);
 #ifdef ALEXA
-    if (alexa.getDeviceId(aname.c_str()) < 0)
-    {
-        alexa.addDevice(aname.c_str());
-        map.alexaId = alexa.getDeviceId(aname.c_str());
+    EspalexaDevice *d = new EspalexaDevice(String(aname), [this](EspalexaDevice *d)
+                                           { DoCallback(d->getId(), d->getName().c_str(), d->getState(), d->getPercent()); }, EspalexaDeviceType::onoff, 0);
 
-        alexa.setDeviceUniqueId((char)map.alexaId, map.uniqueId().c_str());
+    int idx = alexa.addDevice(d);
+    if (idx > 0)
+    {
+        map.alexaIdx = idx - 1;
 
         alexaDevices.push_back(map);
+
+        Logger::info("Adicionou Alexa: %s", aname);
     }
-    Logger::info("Adicionou Alexa: %s", aname);
 #endif
 }
 #endif

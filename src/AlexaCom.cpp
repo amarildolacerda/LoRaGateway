@@ -19,7 +19,7 @@ void AlexaCom::aliveOffLineAlexa()
         {
             data = deviceInfo.getDevices()[idx];
             secs = deviceInfo.diffSeconds(data.lastSeen);
-            auto device = alexa.getDevice(dev.alexaIdx);
+            auto device = alexa->getDevice(dev.alexaIdx);
 
 #ifdef ALEXA
             if (secs >= 60 * 5)
@@ -62,8 +62,9 @@ void AlexaCom::DoGetCallback(unsigned char device_id, const char *device_name)
     }
 }
 
-void AlexaCom::setup(WEBSERVER *server, AlexaCallbackType callback)
+void AlexaCom::setup(WEBSERVER *_server, AlexaCallbackType callback)
 {
+
     alexaDeviceCallback = callback;
 #ifdef ALEXA
     Logger::info("Alexa Init");
@@ -71,9 +72,9 @@ void AlexaCom::setup(WEBSERVER *server, AlexaCallbackType callback)
 #ifdef DEBUG_ON
     Logger::debug("Creating Alexa Server");
 #endif
-    alexa.begin(server);
-    // alexa.createServer((server == NULL) ? true : false);
-    // alexa.setPort(80);
+    alexa->begin(_server);
+    //  alexa.createServer((server == NULL) ? true : false);
+    //  alexa.setPort(80);
 
     for (size_t i = 0; i < deviceInfo.size(); i++)
     {
@@ -132,7 +133,7 @@ void AlexaCom::renameDevice(const uint8_t tid, String name)
 void AlexaCom::loop()
 {
 #ifdef ALEXA
-    alexa.loop();
+    // alexa->loop();
     static long updateDiscovery = 0;
     if (millis() - updateDiscovery > 60000)
     {
@@ -142,14 +143,14 @@ void AlexaCom::loop()
     }
 
     static long alexaShow = 0;
-    if (millis() - alexaShow > 30000)
+    if (millis() - alexaShow > 11000)
     {
         alexaShow = millis();
         Serial.println("Alexa devices: ");
         for (auto &dev : alexaDevices)
         {
             Serial.printf("tId: %d, id: %d, ", dev.tid, dev.alexaIdx);
-            EspalexaDevice *p = alexa.getDevice(dev.alexaIdx);
+            EspalexaDevice *p = alexa->getDevice(dev.alexaIdx);
             if (p)
             {
                 Serial.printf("Nome: %s, State: %s, Value: %d \n", p->getName(), p->getState() ? "on" : "off", p->getValue());
@@ -177,11 +178,12 @@ void AlexaCom::updateStateAlexa(const uint8_t tid, const bool value)
     String rsp = value ? "255" : "0";
     Logger::warn("Alexa::SetState(%d,%s,%s)", alexaId, String(value), rsp);
     // alexa.setState(alexaId, value, value ? 100 : 0);
-    auto device = alexa.getDevice(alexaId);
+    auto device = alexa->getDevice(alexaId);
     if (device)
     {
         device->setState(value);
         device->setValue(value ? 255 : 0);
+        device->setPercent(value ? 100 : 0);
         Logger::info("Send to Alexa %d %s", alexaId, device->getState() ? "on" : "off");
     }
 #endif
@@ -225,7 +227,7 @@ void AlexaCom::addDevice(uint8_t tid, const String name)
     EspalexaDevice *d = new EspalexaDevice(String(aname), [this](EspalexaDevice *d)
                                            { DoCallback(d->getId(), d->getName().c_str(), d->getState(), d->getPercent()); }, EspalexaDeviceType::onoff, 0);
 
-    int idx = alexa.addDevice(d);
+    int idx = alexa->addDevice(d);
     if (idx > 0)
     {
         map.alexaIdx = idx - 1;

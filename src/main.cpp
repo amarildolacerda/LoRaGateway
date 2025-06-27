@@ -105,13 +105,30 @@ void loop()
 
 #else
 #include "transmissor.h"
+
+#ifdef ALEXA
+#include "Espalexa.h"
+#include "AlexaCom.h"
+#include "ESP8266WebServer.h
+
+ESP8266WebServer server(80);
+Espalexa alexa;
+#endif
 void setup()
 {
+    alexaCom.setServer(server);
+
+#ifdef ALEXA
+    alexaCom.setAlexaCmp(&alexa);
+#endif
     app.setup();
 }
 void loop()
 {
     app.loop();
+#ifdef ALEXA
+    alexa.loop();
+#endif
 }
 
 #endif

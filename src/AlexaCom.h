@@ -18,8 +18,6 @@
 #include "espalexa.h"
 #endif
 
-
-
 struct AlexaDeviceMap
 {
     uint8_t tid;      // ID do dispositivo LoRa
@@ -48,14 +46,20 @@ private:
     void DoGetCallback(unsigned char device_id, const char *device_name);
     bool isTermostat = false;
 
-public:
-    Espalexa alexa;
+protected:
+    Espalexa *alexa = nullptr;
 
+public:
     std::vector<AlexaDeviceMap> alexaDevices;
     AlexaCallbackType alexaDeviceCallback;
     AlexaOnGetCallback onGetCallbackFn;
 
-    void setup(WEBSERVER *server, AlexaCallbackType callback);
+    void setAlexaCmp(Espalexa *_alexa)
+    {
+        alexa = _alexa;
+    }
+
+    void setup(WEBSERVER *_server, AlexaCallbackType callback);
     void onGetCallback(AlexaOnGetCallback fn)
     {
         onGetCallbackFn = fn;

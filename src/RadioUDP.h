@@ -2,10 +2,18 @@
 #define UDP_INTERFACE_H
 
 #include <RadioInterface.h>
+#ifdef ESP8266
 #include <ESPAsyncUDP.h>
+#else
+#include "AsyncUDP.h"
+#endif
 // #include <WiFiUdp.h>
 #include "logger.h"
 #include "stats.h"
+
+#define LWIP_INTERNAL
+#include <lwip/ip4_addr.h>
+#undef LWIP_INTERNAL
 
 class RadioUDP : public RadioInterface
 {

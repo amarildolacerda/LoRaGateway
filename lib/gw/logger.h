@@ -37,4 +37,10 @@ private:
     static bool vlog(const LogLevel level, const char *format, va_list args);
 };
 
+#ifdef DEBUG_ON
+#define DEBUG_PRINT(...) Logger::debug(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
+
 #endif

@@ -34,6 +34,11 @@
 class WiFiManager
 {
 private:
+    // Forward declarations of the static HTML templates
+    static const char MAIN_PAGE[] PROGMEM;
+    static const char WIFI_CONFIG_PAGE[] PROGMEM;
+    static const char SAVE_SUCCESS_PAGE[] PROGMEM;
+
     AsyncWebServer *server;
     DNSServer *dns;
     bool isInConfigurationMode;
@@ -166,30 +171,38 @@ private:
         }
     }
 
+    String getStatusString()
+    {
+        if (isInConfigurationMode)
+        {
+            return "Modo de configuração ativo";
+        }
+        else if (WiFi.status() == WL_CONNECTED)
+        {
+            return String("Conectado à rede: ") + WiFi.SSID();
+        }
+        else
+        {
+            return "Desconectado";
+        }
+    }
+
     void setupWebServer()
     {
         DEBUG_PRINT("WM* Setting up web server\n");
 
         // Configuração das rotas do servidor web
-        server->on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+        server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
                    { 
             DEBUG_PRINT("WM* Handling / request\n");
-            request->send(200, "text/html",
-                         "<html><body>"
-                         "<h1>Configuração WiFi</h1>"
-                         "<p><a href='/wifi'>Configurar WiFi</a></p>"
-                         "</body></html>"); });
+            String html = FPSTR(MAIN_PAGE);
+            html.replace("%STATUS%", getStatusString());
+            request->send(200, "text/html", html); });
 
         server->on("/wifi", HTTP_GET, [this](AsyncWebServerRequest *request)
                    {
             DEBUG_PRINT("WM* Handling /wifi request\n");
-            String html = "<html><body><h1>Configurar WiFi</h1>"
-                         "<form method='post' action='/save'>"
-                         "SSID: <input type='text' name='ssid'><br>"
-                         "Senha: <input type='password' name='password'><br>"
-                         "<input type='submit' value='Salvar'>"
-                         "</form></body></html>";
-            request->send(200, "text/html", html); });
+            request->send_P(200, "text/html", WIFI_CONFIG_PAGE); });
 
         server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request)
                    {
@@ -199,11 +212,7 @@ private:
                 password = request->getParam("password", true)->value();
                 DEBUG_PRINT("WM* New credentials received - SSID: %s, Password: %s\n", ssid.c_str(), password.c_str());
                 saveCredentials();
-                request->send(200, "text/html", 
-                    "<html><body>"
-                    "<h1>Configuração salva!</h1>"
-                    "<p>Reiniciando para conectar...</p>"
-                    "</body></html>");
+                request->send_P(200, "text/html", SAVE_SUCCESS_PAGE);
                 delay(1000);
                 ESP.restart();
             } else {

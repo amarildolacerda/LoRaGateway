@@ -22,6 +22,15 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
+// Debug print macro
+#ifndef DEBUG_PRINT
+#ifdef DEBUG_ON
+#define DEBUG_PRINT(...) Serial.printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
+#endif
+
 class WiFiManager
 {
 private:
@@ -35,10 +44,11 @@ private:
     bool autoReconnect;
     int maxConnectionAttempts;
     const char *apSSID = "ESP_Config";
-    const char *apPassword = "12345678"; // Pode deixar vazio para rede aberta
+    const char *apPassword = "12345678";
     std::function<void(bool)> connectCallback;
+    unsigned long lastAttemptTime;
+    bool attemptingToConnect;
 
-    // Estrutura para armazenar redes encontradas
     struct WiFiNetwork
     {
         String ssid;
@@ -48,54 +58,60 @@ private:
 
     void loadCredentials()
     {
-        DEBUG_PRINT("WM* loadCredentials()");
+        DEBUG_PRINT("WM* loadCredentials()\n");
         if (!preferences.begin("wifi-config", true))
         {
+            DEBUG_PRINT("WM* Failed to begin preferences\n");
             return;
         }
         ssid = preferences.getString("ssid", "");
         password = preferences.getString("password", "");
         preferences.end();
+        DEBUG_PRINT("WM* Loaded SSID: %s, Password: %s\n", ssid.c_str(), password.c_str());
     }
 
     void saveCredentials()
     {
-        DEBUG_PRINT("WM* saveCredentials()");
+        DEBUG_PRINT("WM* saveCredentials() - SSID: %s, Password: %s\n", ssid.c_str(), password.c_str());
         if (!preferences.begin("wifi-config", false))
         {
+            DEBUG_PRINT("WM* Failed to begin preferences for writing\n");
             return;
         }
         preferences.putString("ssid", ssid);
         preferences.putString("password", password);
         preferences.end();
+        DEBUG_PRINT("WM* Credentials saved successfully\n");
     }
 
     void startAP()
     {
-        WiFi.mode(WIFI_AP);
+        DEBUG_PRINT("WM* Starting AP mode\n");
+        WiFi.mode(WIFI_AP_STA); // Mantém ambos os modos ativos
         if (!WiFi.softAP(apSSID, apPassword))
         {
-            Serial.println("Falha ao iniciar modo AP");
+            DEBUG_PRINT("WM* Failed to start AP mode\n");
             return;
         }
 
-        Serial.println("\nModo AP Iniciado");
-        Serial.printf("SSID: %s\n", apSSID);
-        Serial.print("IP: ");
-        Serial.println(WiFi.softAPIP());
+        DEBUG_PRINT("\nWM* AP Mode Started\n");
+        DEBUG_PRINT("WM* SSID: %s\n", apSSID);
+        DEBUG_PRINT("WM* IP: %s\n", WiFi.softAPIP().toString().c_str());
 
         if (dns)
         {
             dns->setErrorReplyCode(DNSReplyCode::NoError);
             dns->start(53, "*", WiFi.softAPIP());
+            DEBUG_PRINT("WM* DNS server started\n");
         }
-        DEBUG_PRINT("WM* startAP(%s,%s) ", apSSID, apPassword);
 
         isInConfigurationMode = true;
+        setupWebServer();
     }
 
     void stopAP()
     {
+        DEBUG_PRINT("WM* Stopping AP mode\n");
         if (dns)
         {
             dns->stop();
@@ -108,59 +124,65 @@ private:
     {
         if (ssid.isEmpty())
         {
+            DEBUG_PRINT("WM* No SSID configured, starting AP mode\n");
             startAP();
             return;
         }
 
-        Serial.printf("\nConectando a: %s\n", ssid.c_str());
+        DEBUG_PRINT("\nWM* Connecting to: %s\n", ssid.c_str());
         WiFi.disconnect(true);
         delay(100);
         WiFi.mode(WIFI_STA);
         WiFi.setAutoReconnect(true);
-#if defined(ESP8266)
-        WiFi.setSleepMode(WIFI_NONE_SLEEP);
-#elif defined(ESP32)
-        WiFi.setSleep(false);
-#endif
+        WIFI_SET_SLEEP;
 
         WiFi.begin(ssid.c_str(), password.c_str());
+        lastAttemptTime = millis();
+        attemptingToConnect = true;
+    }
 
-        unsigned long startTime = millis();
-        while (millis() - startTime < 20000 && WiFi.status() != WL_CONNECTED)
-        {
-            delay(500);
-            Serial.print(".");
-        }
+    void checkConnection()
+    {
+        if (!attemptingToConnect)
+            return;
 
         if (WiFi.status() == WL_CONNECTED)
         {
-            Serial.println("\nConectado!");
+            DEBUG_PRINT("\nWM* Connected successfully!\n");
+            DEBUG_PRINT("WM* IP Address: %s\n", WiFi.localIP().toString().c_str());
             if (connectCallback)
                 connectCallback(true);
             if (isInConfigurationMode)
                 stopAP();
+            attemptingToConnect = false;
         }
-        else
+        else if (millis() - lastAttemptTime > 20000) // Timeout após 20 segundos
         {
-            Serial.println("\nFalha na conexão");
+            DEBUG_PRINT("\nWM* Connection failed\n");
             if (connectCallback)
                 connectCallback(false);
             startAP();
+            attemptingToConnect = false;
         }
     }
 
     void setupWebServer()
     {
+        DEBUG_PRINT("WM* Setting up web server\n");
+
         // Configuração das rotas do servidor web
         server->on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                   { request->send(200, "text/html",
-                                   "<html><body>"
-                                   "<h1>Configuração WiFi</h1>"
-                                   "<p><a href='/wifi'>Configurar WiFi</a></p>"
-                                   "</body></html>"); });
+                   { 
+            DEBUG_PRINT("WM* Handling / request\n");
+            request->send(200, "text/html",
+                         "<html><body>"
+                         "<h1>Configuração WiFi</h1>"
+                         "<p><a href='/wifi'>Configurar WiFi</a></p>"
+                         "</body></html>"); });
 
         server->on("/wifi", HTTP_GET, [this](AsyncWebServerRequest *request)
                    {
+            DEBUG_PRINT("WM* Handling /wifi request\n");
             String html = "<html><body><h1>Configurar WiFi</h1>"
                          "<form method='post' action='/save'>"
                          "SSID: <input type='text' name='ssid'><br>"
@@ -171,9 +193,11 @@ private:
 
         server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request)
                    {
+            DEBUG_PRINT("WM* Handling /save request\n");
             if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
                 ssid = request->getParam("ssid", true)->value();
                 password = request->getParam("password", true)->value();
+                DEBUG_PRINT("WM* New credentials received - SSID: %s, Password: %s\n", ssid.c_str(), password.c_str());
                 saveCredentials();
                 request->send(200, "text/html", 
                     "<html><body>"
@@ -183,27 +207,41 @@ private:
                 delay(1000);
                 ESP.restart();
             } else {
+                DEBUG_PRINT("WM* Invalid data received in /save request\n");
                 request->send(400, "text/plain", "Dados inválidos");
             } });
     }
 
 public:
-    WiFiManager(AsyncWebServer *existingServer, DNSServer *dnsServer) : server(existingServer), dns(dnsServer), isInConfigurationMode(false),
-                                                                        autoReconnect(true), maxConnectionAttempts(5), connectionAttempts(0)
+    WiFiManager(AsyncWebServer *existingServer, DNSServer *dnsServer) : server(existingServer),
+                                                                        dns(dnsServer),
+                                                                        isInConfigurationMode(false),
+                                                                        autoReconnect(true),
+                                                                        maxConnectionAttempts(5),
+                                                                        connectionAttempts(0),
+                                                                        attemptingToConnect(false)
     {
+        DEBUG_PRINT("WM* WiFiManager constructor\n");
     }
 
     ~WiFiManager()
     {
+        DEBUG_PRINT("WM* WiFiManager destructor\n");
     }
 
     void resetSettings()
     {
-        DEBUG_PRINT("WM* resetSettings()");
+        DEBUG_PRINT("WM* Resetting WiFi settings\n");
+        preferences.begin("wifi-config", false);
+        preferences.clear();
+        preferences.end();
+        ssid = "";
+        password = "";
     }
 
     void autoConnect(const char *defaultSSID = "", const char *defaultPassword = "")
     {
+        DEBUG_PRINT("WM* autoConnect called\n");
 #if defined(ESP32)
         nvs_flash_init();
 #endif
@@ -211,22 +249,29 @@ public:
 
         if (strlen(defaultSSID) > 0 && ssid.isEmpty())
         {
+            DEBUG_PRINT("WM* Using default SSID: %s\n", defaultSSID);
             ssid = defaultSSID;
             password = defaultPassword;
         }
 
         tryConnect();
-        setupWebServer();
         server->begin();
+        DEBUG_PRINT("WM* Web server started\n");
     }
 
     void setConnectCallback(std::function<void(bool)> callback)
     {
+        DEBUG_PRINT("WM* Connect callback set\n");
         connectCallback = callback;
     }
 
     void loop()
     {
+        if (attemptingToConnect)
+        {
+            checkConnection();
+        }
+
         if (dns && isInConfigurationMode)
         {
             dns->processNextRequest();
@@ -235,17 +280,22 @@ public:
 
     bool isConnected() const
     {
-        return WiFi.status() == WL_CONNECTED;
+        bool connected = WiFi.status() == WL_CONNECTED;
+        DEBUG_PRINT("WM* isConnected: %d\n", connected);
+        return connected;
     }
 
     String getSSID() const
     {
+        DEBUG_PRINT("WM* getSSID: %s\n", ssid.c_str());
         return ssid;
     }
 
     IPAddress getLocalIP() const
     {
-        return WiFi.localIP();
+        IPAddress ip = WiFi.localIP();
+        DEBUG_PRINT("WM* getLocalIP: %s\n", ip.toString().c_str());
+        return ip;
     }
 };
 

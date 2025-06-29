@@ -1,6 +1,7 @@
 #include "logger.h"
 
 #ifdef WIFI
+
 // Definição da variável estática
 std::function<void(const String &)> Logger::logCallback = nullptr;
 

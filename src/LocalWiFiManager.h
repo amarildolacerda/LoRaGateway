@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <vector>
-
+#include <logger.h>
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #define WIFI_SET_SLEEP WiFi.setSleepMode(WIFI_NONE_SLEEP)
@@ -35,7 +35,7 @@ private:
     bool autoReconnect;
     int maxConnectionAttempts;
     const char *apSSID = "ESP_Config";
-    const char *apPassword = "config123"; // Pode deixar vazio para rede aberta
+    const char *apPassword = "12345678"; // Pode deixar vazio para rede aberta
     std::function<void(bool)> connectCallback;
 
     // Estrutura para armazenar redes encontradas
@@ -48,6 +48,7 @@ private:
 
     void loadCredentials()
     {
+        DEBUG_PRINT("WM* loadCredentials()");
         if (!preferences.begin("wifi-config", true))
         {
             return;
@@ -59,6 +60,7 @@ private:
 
     void saveCredentials()
     {
+        DEBUG_PRINT("WM* saveCredentials()");
         if (!preferences.begin("wifi-config", false))
         {
             return;
@@ -87,6 +89,7 @@ private:
             dns->setErrorReplyCode(DNSReplyCode::NoError);
             dns->start(53, "*", WiFi.softAPIP());
         }
+        DEBUG_PRINT("WM* startAP(%s,%s) ", apSSID, apPassword);
 
         isInConfigurationMode = true;
     }
@@ -194,6 +197,11 @@ public:
     {
     }
 
+    void resetSettings()
+    {
+        DEBUG_PRINT("WM* resetSettings()");
+    }
+
     void autoConnect(const char *defaultSSID = "", const char *defaultPassword = "")
     {
 #if defined(ESP32)
@@ -217,7 +225,7 @@ public:
         connectCallback = callback;
     }
 
-    void process()
+    void loop()
     {
         if (dns && isInConfigurationMode)
         {

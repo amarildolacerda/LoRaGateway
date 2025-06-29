@@ -106,10 +106,10 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
                            if (alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body))
                                return; });
 #endif
-    alexa.addThermostat("termostato");
-    alexa.setPort(80);
+    // alexa.addThermostat("termostato");
+    // alexa.setPort(80);
     alexa.enable(true);
-    alexa.triggerDiscovery();
+    // alexa.triggerDiscovery();
     Logger::log(LogLevel::INFO, "Alexa Enable(true)");
 #endif
 }

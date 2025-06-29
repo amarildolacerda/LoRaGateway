@@ -25,7 +25,8 @@
 // WiFi related includes
 #ifdef WIFIMANAGER
 #include <LocalWiFiManager.h>
-// #include "WiFiManager.h"
+//  #include "WiFiManager.h"
+// #include "AcessPointConfig.h"
 #else
 #include "ESPAsyncWiFiManager.h"
 #endif
@@ -64,7 +65,7 @@ private:
 #ifdef WIFIMANAGER
 
 #if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
-        WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
+        WiFi.begin(String("kcasa"), String("3938373635"));
         static int8_t attempts = 0;
         while (WiFi.status() != WL_CONNECTED && attempts < 20)
         {
@@ -80,11 +81,14 @@ private:
         return;
 #else
         WiFi.mode(WIFI_AP_STA);
-        wifiManager->setConnectTimeout(40);       // Tempo de tentativa de conexão
+        wifiManager->setTimeout(60);
+        wifiManager->setDebugOutput(true);
+
+        wifiManager->setConnectTimeout(30);       // Tempo de tentativa de conexão
         wifiManager->setConfigPortalTimeout(180); // 3 minutos no modo AP
 
-        wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
-                                   {
+        /* wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
+                                        {
     Serial.println("Modo Configuração Ativado");
     Serial.print("IP do AP: ");
     Serial.println(WiFi.softAPIP()); });
@@ -93,7 +97,7 @@ private:
                                            {
     Serial.println("Configuração salva. Reiniciando...");
     ESP.restart(); });
-
+        */
 #if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
         WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
         static int8_t attempts = 0;
@@ -106,9 +110,9 @@ private:
         if (WiFi.status() != WL_CONNECTED)
             wifiManager->autoConnect("gatewayConfig", "123456780");
 #else
-        // Tenta conectar em background
-        wifiManager->startConfigPortalModeless("gatewayConfig", "123456780");
-        // wifiManager->autoConnect("gatewayConfig", "");
+                                                  // Tenta conectar em background
+        // wifiManager->startConfigPortalModeless("gatewayConfig", "123456780");
+        wifiManager->autoConnect();
 #endif
 
 #endif
@@ -206,6 +210,7 @@ public:
         //}
 
         initAlexa();
+        Serial.println("WiFi.begin() completado");
         delay(500); // Stabilization after connection
 
 #ifdef WS
@@ -245,7 +250,7 @@ public:
     {
 
 #ifdef WIFIMANAGER
-        wifiManager->process();
+        wifiManager->loop();
 #endif
 
 #ifdef ALEXA

@@ -249,6 +249,8 @@ public:
     void loop()
     {
 
+        systemState.isConnected = WiFi.isConnected();
+
 #ifdef WIFIMANAGER
         wifiManager->loop();
 #endif

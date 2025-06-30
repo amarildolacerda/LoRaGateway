@@ -61,7 +61,7 @@ public:
         Serial.begin(Config::SERIAL_BAUD); // initialize serial
         while (!Serial)
             ;
-        Serial.println("Iniciando");
+        Serial.println("\nIniciando");
         initPerif();
 
         systemState.terminalId = TERMINAL_ID;

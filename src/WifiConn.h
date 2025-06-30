@@ -43,6 +43,10 @@
 #include "html_tserver.h"
 #endif
 
+#ifdef DISPLAY
+#include "DisplayManager.h"
+#endif
+
 class WiFiConn
 {
 private:
@@ -63,7 +67,7 @@ private:
     void initWiFi()
     {
 #ifdef WIFIMANAGER
-
+        wifiManager->setAP("gatewayConfig", "12345678");
 #if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
         WiFi.begin(String("kcasa"), String("3938373635"));
         static int8_t attempts = 0;
@@ -80,14 +84,20 @@ private:
         systemState.isConnected = WiFi.isConnected();
         return;
 #else
-        WiFi.mode(WIFI_AP_STA);
-        wifiManager->setTimeout(60);
-        wifiManager->setDebugOutput(true);
 
-        wifiManager->setConnectTimeout(30);       // Tempo de tentativa de conexão
+#ifdef DISPLAY
+        displayManager.showMessage("...connectando");
+#endif
+
+        WiFi.mode(WIFI_AP_STA);
+        wifiManager->setTimeout(30);
+        wifiManager->setDebugOutput(true);
+        // wifiManager->setConfigPortalBlocking(true);
+
+        wifiManager->setConnectTimeout(10);       // Tempo de tentativa de conexão
         wifiManager->setConfigPortalTimeout(180); // 3 minutos no modo AP
 
-        /* wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
+                /* wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
                                         {
     Serial.println("Modo Configuração Ativado");
     Serial.print("IP do AP: ");
@@ -108,11 +118,17 @@ private:
             attempts++;
         }
         if (WiFi.status() != WL_CONNECTED)
-            wifiManager->autoConnect("gatewayConfig", "123456780");
 #else
                                                   // Tenta conectar em background
-        // wifiManager->startConfigPortalModeless("gatewayConfig", "123456780");
-        wifiManager->autoConnect();
+        if (!wifiManager->autoConnect())
+        {
+#ifdef DISPLAY
+            displayManager.showMessage("SSID: gatewayConfig");
+#endif
+
+            wifiManager->startConfigPortalModeless("gatewayConfig", "");
+        }
+        // wifiManager->autoConnect();
 #endif
 
 #endif

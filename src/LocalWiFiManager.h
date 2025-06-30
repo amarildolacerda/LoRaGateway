@@ -48,8 +48,8 @@ private:
     unsigned long connectionAttempts;
     bool autoReconnect;
     int maxConnectionAttempts;
-    const char *apSSID = "ESP_Config";
-    const char *apPassword = "12345678";
+    char *apSSID;
+    char *apPassword;
     std::function<void(bool)> connectCallback;
     unsigned long lastAttemptTime;
     bool attemptingToConnect;
@@ -228,6 +228,8 @@ public:
                                                                         autoReconnect(true),
                                                                         maxConnectionAttempts(5),
                                                                         connectionAttempts(0),
+                                                                        apSSID("ESP-Config"),
+                                                                        apPassword("12345678"),
                                                                         attemptingToConnect(false)
     {
         DEBUG_PRINT("WM* WiFiManager constructor\n");
@@ -246,6 +248,12 @@ public:
         preferences.end();
         ssid = "";
         password = "";
+    }
+
+    void setAP(const String ssid, const String pass)
+    {
+        sprintf(apSSID, ssid.c_str());
+        sprintf(apPassword, pass.c_str());
     }
 
     void autoConnect(const char *defaultSSID = "", const char *defaultPassword = "")

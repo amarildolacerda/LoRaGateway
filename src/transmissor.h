@@ -62,6 +62,9 @@ public:
         while (!Serial)
             ;
         Serial.println("\nIniciando");
+
+        initNet();
+
         initPerif();
 
         systemState.terminalId = TERMINAL_ID;
@@ -79,8 +82,6 @@ public:
             deviceInfo.updateDevice(TERMINAL_ID, TERMINAL_NAME, false, 0);
 #endif
         }
-
-        initNet();
 
         loraCom.begin(systemState.terminalId, Config::LORA_BAND, true); // initialize LoRa at 868 MHz
 

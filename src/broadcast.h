@@ -1,3 +1,5 @@
+#if !defined(BROADCAST_H) && defined(BROADCAST)
+#define BROADCAST_H
 #ifdef ESP32
 #include <WiFi.h>
 #else
@@ -90,3 +92,5 @@ private:
     WiFiUDP udp;
     BroadcastCallback callback;
 };
+
+#endif

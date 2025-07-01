@@ -1,6 +1,6 @@
 // Compiler: The project is compiled with the ESP-IDF toolchain for ESP32/ESP8266.
 // Platform: The project is designed to run on the ESP32/ESP8266 platform.
-#ifndef DISPPLAY_MANAGER_H
+#if !defined(DISPPLAY_MANAGER_H) && defined(DISPLAY_ENABLED)
 #define DISPPLAY_MANAGER_H
 
 #ifdef DISPLAY_ENABLED

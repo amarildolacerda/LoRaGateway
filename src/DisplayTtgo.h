@@ -1,4 +1,4 @@
-#ifndef TTGO_DISPLAY_H
+#if !defined(TTGO_DISPLAY_H) && defined(DISPLAYTTGO)
 #define TTGO_DISPLAY_H
 
 #ifdef DISPLAYTTGO

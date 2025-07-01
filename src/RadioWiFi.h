@@ -1,9 +1,13 @@
-#ifndef RADIO_WIFI_ASYNC_H
+#if !defined(RADIO_WIFI_ASYNC_H) && defined(RADIO_WIFI)
 #define RADIO_WIFI_ASYNC_H
 
 #include "Arduino.h"
 #include "RadioInterface.h"
+#ifdef ESP8266
 #include <ESPAsyncTCP.h>
+#else
+#include <AsyncTCP.h>
+#endif
 #include <vector>
 #include "EEPROM.h"
 

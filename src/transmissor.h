@@ -80,9 +80,9 @@ public:
 #endif
         }
 
-        loraCom.begin(systemState.terminalId, Config::LORA_BAND, true); // initialize LoRa at 868 MHz
-
         initNet();
+
+        loraCom.begin(systemState.terminalId, Config::LORA_BAND, true); // initialize LoRa at 868 MHz
 
         systemState.isInitialized = loraCom.isConnected();
         Serial.println("Radio started");

@@ -97,17 +97,17 @@ private:
         wifiManager->setConnectTimeout(10);       // Tempo de tentativa de conexão
         wifiManager->setConfigPortalTimeout(180); // 3 minutos no modo AP
 
-                /* wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
-                                        {
-    Serial.println("Modo Configuração Ativado");
-    Serial.print("IP do AP: ");
-    Serial.println(WiFi.softAPIP()); });
+        /* wifiManager->setAPCallback([](AsyncWiFiManager *wifiMgr)
+                                {
+Serial.println("Modo Configuração Ativado");
+Serial.print("IP do AP: ");
+Serial.println(WiFi.softAPIP()); });
 
-        wifiManager->setSaveConfigCallback([]()
-                                           {
-    Serial.println("Configuração salva. Reiniciando...");
-    ESP.restart(); });
-        */
+wifiManager->setSaveConfigCallback([]()
+                                   {
+Serial.println("Configuração salva. Reiniciando...");
+ESP.restart(); });
+*/
 #if defined(WIFI_SSID) && defined(WIFI_PASSWORD)
         WiFi.begin(String(WIFI_SSID), String(WIFI_PASSWORD));
         static int8_t attempts = 0;
@@ -268,6 +268,8 @@ public:
         systemState.isConnected = WiFi.isConnected();
 
 #ifdef WIFIMANAGER
+        wifiManager->loop();
+#else
         wifiManager->loop();
 #endif
 

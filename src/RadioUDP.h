@@ -4,16 +4,19 @@
 #include <RadioInterface.h>
 #ifdef ESP8266
 #include <ESPAsyncUDP.h>
+#include <ESP8266WiFi.h>
 #else
 #include "AsyncUDP.h"
+#include "WiFi.h"
 #endif
-// #include <WiFiUdp.h>
 #include "logger.h"
 #include "stats.h"
 
+/*
 #define LWIP_INTERNAL
 #include <lwip/ip4_addr.h>
 #undef LWIP_INTERNAL
+*/
 
 class RadioUDP : public RadioInterface
 {
@@ -29,10 +32,19 @@ public:
     {
         _broadcastIP = IPAddress(255, 255, 255, 255);
     }
+    ~RadioUDP()
+    {
+        udp.close();
+        connected = false;
+    }
 
+    bool isConnected()
+    {
+        return WiFi.isConnected();
+    }
     bool sendMessage(MessageRec &rec) override
     {
-        if (!_initialized)
+        if (!_initialized || !isConnected())
             return false;
 
         stats.txCount++;
@@ -41,16 +53,7 @@ public:
 
         if (result > 0)
         {
-            if (_isServer)
-            {
-                // Servidor envia para broadcast
-                udp.broadcastTo((uint8_t *)message, result, _localPort);
-            }
-            else
-            {
-                // Cliente envia para servidor
-                udp.broadcastTo((uint8_t *)message, result, _localPort);
-            }
+            udp.broadcastTo((uint8_t *)message, result, _localPort);
 
             stats.txSuccess++;
             log(true, rec);
@@ -75,6 +78,11 @@ public:
         // Não há ação específica para modo TX no UDP
     }
 
+    void loop() override
+    {
+        return RadioInterface::loop();
+    }
+
     bool begin(const uint8_t terminal_id, uint16_t port)
     {
         _localPort = port;
@@ -83,7 +91,7 @@ public:
     bool begin(const uint8_t terminal_Id, long band, bool promisc = true) override
     {
         terminalId = terminal_Id;
-
+        udp.close();
         if (udp.listen(_localPort))
         {
             udp.onPacket([this](AsyncUDPPacket packet)
@@ -110,11 +118,12 @@ public:
     {
         stats.rxCount++;
 
-        if (packet.length() >= MESSAGE_MAX_LEN)
+        if (packet.length() == 0 || packet.length() >= MESSAGE_MAX_LEN)
         {
 #ifdef DEBUG_ON
-            Logger::error("Pacote UDP muito grande: %d bytes", packet.length());
+            Logger::error("Pacote UDP: %d bytes", packet.length());
 #endif
+            stats.rxErrors++;
             return;
         }
 
@@ -142,7 +151,8 @@ public:
             }
 
             addRxMessage(rec);
-            meshMessage(rec);
+            // meshMessage(rec);
+            stats.rxSuccess++;
         }
     }
     void setBroadcastIP(IPAddress ip)

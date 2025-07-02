@@ -92,8 +92,8 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
 
     alexa.onSetState([](unsigned char device_id, const char *device_name, bool state, unsigned char value)
                      { alexaCom.DoCallback(device_id, device_name, state, value); });
-    alexa.onGetState([](unsigned char device_id, const char *device_name)
-                     { alexaCom.DoGetCallback(device_id, device_name); });
+    // alexa.onGetState([](unsigned char device_id, const char *device_name)
+    //                  { alexaCom.DoGetCallback(device_id, device_name); });
 
 #ifdef WS
     server->onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)

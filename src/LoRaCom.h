@@ -8,32 +8,7 @@
 #include "ExtraQueue.h"
 #endif
 
-#ifdef RF95
-#include "LoRaRF95.h"
-#elif defined(LORA32) || defined(TTGO) || defined(HELTEC)
-#include "LoRa32.h"
-#undef BROADCAST
-#elif NRF24
-#include "RadioNRF24.h"
-#undef BROADCAST
-#elif RADIO_WIFI
-#include "RadioWiFi.h"
-#define BROADCAST
-#elif RADIO_UDP
-#include "RadioUDP.h"
-#undef BROADCAST
-#elif RADIO_RF433
-#include "RadioRF433.h"
-#undef BROADCAST
-#else
-#include "LoRaDummy.h"
-#undef BROADCAST
-#endif
-
-#ifdef BROADCAST
-#include "broadcast.h"
-extern void broadcastCallbackFn(const NetworkInfo *info);
-#endif
+#include "RadioInterface.h"
 
 class LoRaCom
 {
@@ -43,40 +18,32 @@ private:
 #endif
 public:
     RadioInterface *radio = nullptr;
-    LoRaCom()
-    {
-#ifdef RF95
-        radio = new LoRaRF95();
-#elif defined(LORA32) || defined(TTGO) || defined(HELTEC)
-        radio = new LoRa32();
-#elif NRF24
-        radio = new RadioNRF24();
-#elif RADIO_WIFI
-        radio = new RadioWiFi(12345, TERMINAL_ID == 0);
-#elif RADIO_UDP
-        bool isServer = TERMINAL_ID == 0;
-#ifdef GATEWAY
-        isServer = true;
-#endif
-        radio = new RadioUDP(1234, isServer);
-#elif RADIO_RF433
-        radio = new RadioRF433();
 
-#else
-        radio = new LoRaDummy();
-#endif
+    LoRaCom(RadioInterface *rd) : radio(rd)
+    {
     }
 
+    ~LoRaCom()
+    {
+    }
     String getIdent()
     {
         return radio->getIdent();
     }
     void send(const uint8_t tid, const String &event, const String &value, const uint8_t from = TERMINAL_ID, uint8_t seq = 0)
     {
+        send(radio, tid, event, value, from, seq);
+    }
+    void send(RadioInterface *rd, const uint8_t tid, const String &event, const String &value, const uint8_t from = TERMINAL_ID, uint8_t seq = 0)
+    {
 
-        radio->send(tid, event.c_str(), value.c_str(), (TERMINAL_ID == tid) ? 0xFE : from, seq);
+        rd->send(tid, event.c_str(), value.c_str(), (TERMINAL_ID == tid) ? 0xFE : from, seq);
     }
     void receive(const uint8_t tid, const String &event, const String &value)
+    {
+        receive(radio, tid, event, value);
+    }
+    void receive(RadioInterface *rd, const uint8_t tid, const String &event, const String &value)
     {
         MessageRec rec;
         rec.clear();
@@ -87,7 +54,7 @@ public:
         // snprintf(rec.event, sizeof(rec.event), "%s", event.c_str());
         // snprintf(rec.value, sizeof(rec.value), "%s", value.c_str());
         rec.hop = ALIVE_PACKET;
-        radio->receive(rec);
+        rd->receive(rec);
     }
     void loop()
     {
@@ -142,5 +109,5 @@ public:
     }
 };
 
-extern LoRaCom loraCom;
+// extern LoRaCom loraCom;
 #endif

@@ -2,7 +2,7 @@
 
 #include "LoRaCom.h"
 
-LoRaCom loraCom;
+// LoRaCom loraCom;
 
 #ifdef BROADCAST
 void broadcastCallbackFn(const NetworkInfo *info)

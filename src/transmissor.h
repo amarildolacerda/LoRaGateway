@@ -63,9 +63,8 @@ public:
             ;
         Serial.println("\nIniciando");
 
-        initNet();
-
         initPerif();
+        initNet();
 
         systemState.terminalId = TERMINAL_ID;
         systemState.terminalName = String(TERMINAL_NAME);

@@ -73,6 +73,7 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
 #endif
     alexa.createServer((server == NULL) ? true : false);
     alexa.setPort(80);
+    alexa.enable(true);
 
     for (size_t i = 0; i < deviceInfo.size(); i++)
     {
@@ -86,7 +87,6 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
         AlexaDeviceMap map;
         map.tid = reg.tid;
         map.name = reg.name;
-
         addDevice(reg.tid, map.uniqueName().c_str());
     }
 
@@ -108,7 +108,6 @@ void AlexaCom::setup(AsyncWebServer *server, AlexaCallbackType callback)
 #endif
     // alexa.addThermostat("termostato");
     // alexa.setPort(80);
-    alexa.enable(true);
     // alexa.triggerDiscovery();
     Logger::log(LogLevel::INFO, "Alexa Enable(true)");
 #endif

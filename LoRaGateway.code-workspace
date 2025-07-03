@@ -2,12 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "samples"
-		},
-		{
-			"path": "gw_wifi"
 		}
 	],
 	"settings": {

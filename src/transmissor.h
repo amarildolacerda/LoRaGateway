@@ -127,5 +127,10 @@ public:
 
         proto.loop();
     }
+
+    int addRadio(RadioInterface *rd)
+    {
+        return proto.addRadio(rd);
+    }
 };
 static App app;

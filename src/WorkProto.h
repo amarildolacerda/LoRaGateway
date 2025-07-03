@@ -317,5 +317,10 @@ public:
         ackNak(lora, rec.from, true, rec.id);
     }
 
-    // ... existing code ...
+    int addRadio(RadioInterface *rd)
+    {
+        int pos = radios.size();
+        radios.push_back(new LoRaCom(rd));
+        return pos;
+    }
 };

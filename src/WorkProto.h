@@ -28,8 +28,7 @@ LoRaCom radioCom(new RadioDummy());
 
 #endif
 
-#ifdef WIFI
-#define RADIO_UDP
+#if defined(WIFI) && defined(RADIO_UDP)
 #include "RadioUDP.h"
 LoRaCom radioUDP(new RadioUDP());
 #endif
@@ -62,7 +61,7 @@ public:
     void setup()
     {
         radios.push_back(&radioCom);
-#ifdef WIFI
+#ifdef RADIO_UDP
         radios.push_back(&radioUDP);
 #endif
     }

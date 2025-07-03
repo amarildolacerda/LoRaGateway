@@ -46,11 +46,11 @@ public:
     void initNet()
     {
 #ifdef WIFI
+        wifiConn.begin();
+
 #ifdef ALEXA
         wifiConn.setCallback(alexaDeviceCallback);
 #endif
-
-        wifiConn.begin();
 
 #endif
     }

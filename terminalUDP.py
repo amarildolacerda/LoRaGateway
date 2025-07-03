@@ -46,30 +46,33 @@ def listen_for_messages(udp_socket, term):
             # Responde conforme o payload
             message_id = (message_id + 1) % 256
             if "ping" in payload:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{pong|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{pong|t-udp}\n"
             elif "pub" in payload:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{pub|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{pub|t-udp}\n"
             elif "gp|on" in payload:
                 state = "on"
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|t-udp}\n"
             elif "gp|off" in payload:
                 state = "off"
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|t-udp}\n"
             elif "gp|toggle" in payload:
                 state = "off" if state == "on" else "on"
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|t-udp}\n"
             elif "ack" in payload:
                 continue   
             else:
-                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|t-udp}\n"
 
             udp_socket.sendto(response, addr)
             print(Fore.MAGENTA + f"Enviado -> {format_message(response)}")
 
+            if "gp" in payload:
+                send_periodic_status(udp_socket,term, None, True)
+
         except Exception as e:
             print(Fore.RED + f"Erro ao processar mensagem: {e}")
 
-def send_periodic_status(udp_socket, term, server_addr=None):
+def send_periodic_status(udp_socket, term, server_addr=None, once=0):
     """Envia {st|on}/{st|off} periodicamente."""
     global message_id, state
     
@@ -86,6 +89,10 @@ def send_periodic_status(udp_socket, term, server_addr=None):
             else:
                 udp_socket.sendto(response, ('<broadcast>', BROADCAST_PORT))
             
+
+            if (once==1):
+                break
+
             print(Fore.BLUE + f"Enviado -> {format_message(response)}")
             time.sleep(SEND_INTERVAL)
             

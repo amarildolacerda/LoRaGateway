@@ -77,6 +77,7 @@ bool Logger::vlog(const LogLevel level, const char *format, va_list args)
     strcpy_P(levelBuffer, levelStrings[idx]);
     strcpy_P(colorBuffer, colorCodes[idx]);
 
+#if !defined(LOG_SERIAL_OFF)
 #if defined(ESP8266) && defined(RF95)
 // nao pode usar a Serial, é usada para o RF95
 #else
@@ -89,6 +90,7 @@ bool Logger::vlog(const LogLevel level, const char *format, va_list args)
     Serial.print(F(" "));
     Serial.println(formattedMsg);
     Serial.print(F("\033[0m"));
+#endif
 #endif
 
 #ifdef WIFI

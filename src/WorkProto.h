@@ -47,6 +47,10 @@ public:
     }
     void begin()
     {
+        if (systemState.isGateway && RELAY_PIN > 0)
+        {
+            deviceInfo.updateDevice(nullptr, 0xFE, TERMINAL_NAME, false, 0);
+        }
         if (systemState.isGateway)
         {
             for (auto &lora : radios)
@@ -74,7 +78,12 @@ public:
         {
             LoRaCom *lora = deviceInfo.radioOf(rec.to);
             if (lora)
-                lora->send(rec.to, rec.event, rec.value);
+            {
+                if (rec.to == 0xFE && systemState.isGateway)
+                    handleReceived(lora, rec);
+                else
+                    lora->send(rec.to, rec.event, rec.value);
+            }
         }
 
 #endif
@@ -213,8 +222,8 @@ public:
         {
             if (alexaCom.indexOf(rec.from) < 0)
                 alexaCom.addDevice(rec.from, String(rec.from).c_str());
-            alexaCom.updateStateAlexa(rec.from, status);
         }
+        alexaCom.updateStateAlexa(rec.from, status);
 #endif
     }
 

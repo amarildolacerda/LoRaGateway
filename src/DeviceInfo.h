@@ -111,7 +111,7 @@ public:
         newDevice.state = state;
         newDevice.lastSeen = millis();
         newDevice.rssi = 0;                    // Default RSSI value
-        newDevice.name = "Novo" + String(tid); // Default name
+        newDevice.name = "Disp" + String(tid); // Default name
         newDevice.setRadio(lora);
         list.push_back(newDevice);
     }

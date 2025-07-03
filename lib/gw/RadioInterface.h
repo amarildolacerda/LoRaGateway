@@ -24,8 +24,8 @@ class RadioInterface
 protected:
     uint8_t terminalId = 0;
     char terminalName[10] = {0};
-    FifoList txQueue;
-    FifoList rxQueue;
+    MessageQueue txQueue;
+    MessageQueue rxQueue;
     unsigned long lastStateChange = millis();
 
     uint8_t nHeaderId = 0;

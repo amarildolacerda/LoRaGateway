@@ -4,20 +4,10 @@
 #include "Arduino.h"
 #include "logger.h"
 
-#if defined(__AVR__)
-#include <util/atomic.h>
-#define CRITICAL_SECTION ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-#elif defined(ESP32)
+#include "Arduino.h"
+#include "logger.h"
 #include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
-static portMUX_TYPE queueMutex = portMUX_INITIALIZER_UNLOCKED;
-#define CRITICAL_SECTION             \
-    portENTER_CRITICAL(&queueMutex); \
-    portEXIT_CRITICAL(&queueMutex);
-#else
-#define CRITICAL_SECTION
-#endif
+#include <freertos/queue.h>
 
 #define MAX_EVENT_LEN 8
 #define MAX_VALUE_LEN 24
@@ -201,141 +191,130 @@ struct MessageRec
 };
 #pragma pack(pop)
 
-class FifoList
+class MessageQueue
 {
 private:
-    MessageRec *items; // Ponteiro para o array dinâmico
-    volatile int head = 0;
-    volatile int tail = 0;
-    volatile int count = 0;
-    volatile int maxItems; // Tamanho máximo da fila
-
-public:
+    QueueHandle_t xQueue;
     bool checkDup = false;
 
-    // Construtor que recebe o tamanho da fila
-    FifoList(int size = MAX_ITEMS) : maxItems(size)
+public:
+    // Construtor - cria a fila FreeRTOS
+    MessageQueue(int size = MAX_ITEMS)
     {
-        items = new MessageRec[maxItems];
+        xQueue = xQueueCreate(size, sizeof(MessageRec));
+        if (xQueue == NULL)
+        {
+            // Logger::error("Falha ao criar fila FreeRTOS");
+        }
     }
 
-    // Destrutor para liberar memória
-    ~FifoList()
+    // Destrutor - libera a fila
+    ~MessageQueue()
     {
-        delete[] items;
+        if (xQueue != NULL)
+        {
+            vQueueDelete(xQueue);
+        }
     }
 
+    // Método push modificado
     bool pushItem(const MessageRec &item)
     {
-        bool result = false;
-
+        if (xQueue == NULL)
+            return false;
         if (checkDup && contains(item))
             return false;
 
-        CRITICAL_SECTION
-        {
-
-            if (count < maxItems)
-            {
-                items[tail] = item;
-                tail = (tail + 1) % maxItems;
-                count++;
-                result = true;
-#ifdef DEBUG_ON
-                Serial.print("Push item. Count: ");
-                Serial.println(count);
-#endif
-            }
-        }
-        return result;
+        // Envia para a fila com timeout zero (não bloqueante)
+        return xQueueSend(xQueue, &item, 0) == pdPASS;
     }
 
-    bool contains(const MessageRec &item) const
-    {
-#ifdef __AVR__
-        return false;
-#else
-        bool result = false;
-        CRITICAL_SECTION
-        {
-            for (int i = 0; i < count; i++)
-            {
-                int index = (head + i) % maxItems;
-                if (items[index].crc == item.calculateCRC())
-                {
-                    result = true;
-                    break;
-                }
-            }
-        }
-        return result;
-#endif
-    }
-
+    // Método pop modificado
     bool popItem(MessageRec &item)
     {
-        bool result = false;
-        CRITICAL_SECTION
-        {
+        if (xQueue == NULL)
+            return false;
+        return xQueueReceive(xQueue, &item, 0) == pdPASS;
+    }
 
-            if (count > 0)
+    // Verificação de duplicados (opcional)
+    bool contains(const MessageRec &item) const
+    {
+        if (xQueue == NULL)
+            return false;
+
+        // Cria uma cópia temporária da fila para verificação
+        QueueHandle_t xTempQueue = xQueueCreate(uxQueueMessagesWaiting(xQueue), sizeof(MessageRec));
+        if (xTempQueue == NULL)
+            return false;
+
+        bool found = false;
+        MessageRec tempItem;
+
+        // Verifica todos os itens na fila
+        while (xQueueReceive(xQueue, &tempItem, 0) == pdPASS)
+        {
+            if (tempItem.crc == item.crc)
             {
-                item = items[head];
-                head = (head + 1) % maxItems;
-                count--;
-                result = true;
-#ifdef DEBUG_ON
-                Serial.print("Pop item. Count: ");
-                Serial.println(count);
-#endif
+                found = true;
             }
+            xQueueSend(xTempQueue, &tempItem, 0);
         }
-        return result;
+
+        // Restaura a fila original
+        while (xQueueReceive(xTempQueue, &tempItem, 0) == pdPASS)
+        {
+            xQueueSend(xQueue, &tempItem, 0);
+        }
+
+        vQueueDelete(xTempQueue);
+        return found;
+    }
+
+    // Métodos auxiliares
+    bool isEmpty() const
+    {
+        return xQueue == NULL || uxQueueMessagesWaiting(xQueue) == 0;
+    }
+
+    bool isFull() const
+    {
+        return xQueue != NULL && uxQueueSpacesAvailable(xQueue) == 0;
+    }
+
+    int size() const
+    {
+        return xQueue != NULL ? uxQueueMessagesWaiting(xQueue) : 0;
+    }
+
+    // Versão para uso em ISRs (Interrupt Service Routines)
+    bool pushFromISR(const MessageRec &item, BaseType_t *pxHigherPriorityTaskWoken = NULL)
+    {
+        if (xQueue == NULL)
+            return false;
+        return xQueueSendFromISR(xQueue, &item, pxHigherPriorityTaskWoken) == pdPASS;
+    }
+
+    bool popFromISR(MessageRec &item, BaseType_t *pxHigherPriorityTaskWoken = NULL)
+    {
+        if (xQueue == NULL)
+            return false;
+        return xQueueReceiveFromISR(xQueue, &item, pxHigherPriorityTaskWoken) == pdPASS;
     }
 
     bool push(const uint8_t to, const char *event, const char *value,
-              const uint8_t from, const uint8_t hope, const uint8_t id = 0)
+              const uint8_t from, const uint8_t hop, const uint8_t id = 0)
     {
         MessageRec msg;
         msg.clear();
         msg.to = to;
         msg.from = from;
-        msg.hop = hope;
+        msg.hop = hop;
         msg.id = id;
         msg.setEvent(event);
         msg.setValue(value);
-        msg.calculateCRC();
+        msg.updateCRC();
         return pushItem(msg);
-    }
-
-    bool isEmpty()
-    {
-        bool result;
-        CRITICAL_SECTION
-        {
-            result = (count == 0);
-        }
-        return result;
-    }
-
-    bool isFull()
-    {
-        bool result;
-        CRITICAL_SECTION
-        {
-            result = (count == maxItems);
-        }
-        return result;
-    }
-
-    int size()
-    {
-        int result;
-        CRITICAL_SECTION
-        {
-            result = count;
-        }
-        return result;
     }
 };
 

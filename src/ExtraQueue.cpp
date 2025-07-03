@@ -1,4 +1,4 @@
 
 #include "ExtraQueue.h"
 
-FifoList txExtraQueue(2);
+MessageQueue txExtraQueue(2);

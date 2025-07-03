@@ -80,7 +80,8 @@ public:
             if (lora)
             {
                 if (rec.to == 0xFE && systemState.isGateway)
-                    handleReceived(lora, rec);
+                    //handleReceived(lora, rec);
+                    lora->receive(0,rec.event,rec.value);
                 else
                     lora->send(rec.to, rec.event, rec.value);
             }

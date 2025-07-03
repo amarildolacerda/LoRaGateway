@@ -4,7 +4,7 @@
 #ifdef RF95
 
 #include "RH_RF95.h"
-#include "config.h"
+// #include "config.h"
 #include "logger.h"
 #include "queue_message.h"
 #include "RadioInterface.h"
@@ -13,22 +13,24 @@
 
 #ifdef ESP8266
 
-static RH_RF95<HardwareSerial> rf95(Serial);
+extern RH_RF95<HardwareSerial> rf95;
 
 #else
 
 #include <SoftwareSerial.h>
-SoftwareSerial SSerial(RX_PIN, TX_PIN); // RX, TX
-#define COMSerial SSerial
-#define ShowSerial Serial
-
-static RH_RF95<SoftwareSerial> rf95(COMSerial);
+extern SoftwareSerial SSerial; // RX, TX
+extern RH_RF95<SoftwareSerial> rf95;
 #endif
 
 class LoRaRF95 : public RadioInterface
 {
 private:
 public:
+    String getIdent() override
+    {
+        String r = "RF95Serial (" + String(RX_PIN) + "," + String(TX_PIN) + ")";
+        return r;
+    }
     bool begin(const uint8_t terminal_Id, long band, bool promisc = true) override
     {
 #ifdef ESP8266
@@ -90,7 +92,7 @@ private:
             uint8_t mfrom = rf95.headerFrom();
             _headerHope = (uint8_t)buffer[0];
 
-            if (/*headerSender == terminalId ||*/ mfrom == terminalId)
+            if (mfrom == terminalId)
             {
                 return false;
             }
@@ -104,29 +106,18 @@ private:
             }
 
             MessageRec rec;
-            bool parsed = parseRcv(rec, buffer + 1);
-            if (!parsed)
+            if (!rec.parseCmd(buffer + 1))
             {
-                // printHex(buffer + 1);
                 return false; // bloqueia caracteres invalidos
             }
-            rec.hope = _headerHope;
 
-            if (strstr(buffer, EVT_PING) != NULL)
-            {
-                if (mto != terminalId)
-                    return false;
-                txQueue.push(mfrom, EVT_PONG, terminalName, terminalId, ALIVE_PACKET, nHeaderId++);
-                return true;
-            }
+            rec.to = rf95.headerTo();
+            rec.from = rf95.headerFrom();
+            rec.id = rf95.headerId();
+            rec.len = rf95.headerFlags();
+            rec.hop = _headerHope;
 
-            if ((mto == terminalId) || (mto == 0xFF))
-            {
-                Logger::log(LogLevel::RECEIVE, "[%X->%X:%X](%d) %s|%s", mfrom, mto, rf95.headerId(), rf95.headerFlags(), rec.event, rec.value);
-                rxQueue.push(rec.to, rec.event, rec.value, rec.from, rec.hope, rec.id);
-                if (mto == terminalId)
-                    return true;
-            }
+            addRxMessage(rec);
 
             meshMessage(rec);
 
@@ -139,8 +130,8 @@ private:
     {
         stats.txCount++;
         char message[MESSAGE_MAX_LEN] = {0};
-        uint8_t len = snprintf(message, sizeof(message), "%c{%s|%s}", rec.hope, rec.event, rec.value);
-
+        uint8_t len = snprintf(message, sizeof(message), "%c{%s|%s}", rec.hop, rec.event, rec.value);
+        // uint8_t len = rec.encode(message,MESSAGE_MAX_LEN);
         if (len == 0 || len > MESSAGE_MAX_LEN)
         {
             return false;
@@ -164,8 +155,9 @@ private:
                 { // Timeout de 5 segundos
                     stats.txSuccess++;
                     sendResult = true;
-                    Logger::log(LogLevel::SEND, String((rec.hope < 3 ? "MESH " : "") + String("[%X->%X:%X](%d) %s")).c_str(), rec.from,
-                                rec.to, rec.id, rec.hope, message + 1);
+                    log(true, rec);
+                    // Logger::log(LogLevel::SEND, String((rec.hop < 3 ? "MESH " : "") + String("[%X->%X:%X](%d) %s")).c_str(), rec.from,
+                    //            rec.to, rec.id, rec.hop, message + 1);
 
                     break;
                 }

@@ -1,0 +1,6 @@
+// ...you can add global setup for Jest here...
+
+// Example: import '@testing-library/jest-dom/extend-expect';
+// Example: jest.setTimeout(30000);
+
+// ...add any global test setup code here...

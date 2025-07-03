@@ -31,9 +31,16 @@ public:
     static void debug(const char *msg, ...);
     static bool log(LogLevel level, const char *format, ...);
     static void warn(const char *msg, ...);
+    static void hex(LogLevel level, const char *texto, const size_t len);
 
 private:
     static bool vlog(const LogLevel level, const char *format, va_list args);
 };
+
+#ifdef DEBUG_ON
+#define DEBUG_PRINT(...) Logger::debug(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
 
 #endif

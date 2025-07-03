@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include <vector>
 #include "AlexaCom.h"
+#include "LoRaCom.h"
 
 struct DeviceData
 {
@@ -13,6 +14,7 @@ struct DeviceData
     bool state = 0;
     unsigned long lastSeen = 0;
     int rssi = 0;
+
     bool isEmpty()
     {
         return name.length() == 0;
@@ -21,6 +23,16 @@ struct DeviceData
     {
         return String(tid);
     }
+    ~DeviceData()
+    {
+        if (radio)
+            radio = nullptr;
+    }
+    void setRadio(LoRaCom *rd) { radio = rd; }
+    LoRaCom *getRadio() { return radio; }
+
+private:
+    LoRaCom *radio = nullptr;
 };
 
 class DeviceInfo
@@ -88,7 +100,7 @@ public:
         list.push_back(newDevice);
     }
 
-    void updateDevice(uint8_t tid, const String &name, bool state, int rssi)
+    void updateDevice(LoRaCom *lora, uint8_t tid, const String &name, bool state, int rssi)
     {
         for (auto &device : list)
         {
@@ -101,6 +113,7 @@ public:
                 device.state = state;
                 device.lastSeen = millis();
                 device.rssi = rssi;
+                device.setRadio(lora);
                 return;
             }
         }
@@ -110,6 +123,7 @@ public:
         newDevice.state = state;
         newDevice.lastSeen = millis();
         newDevice.rssi = rssi;
+        newDevice.setRadio(lora);
         list.push_back(newDevice);
     }
     DeviceData getDevice(uint8_t tid)

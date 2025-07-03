@@ -23,9 +23,7 @@ private:
     static void handleBatchStatusRequest(AsyncWebServerRequest *request); // Novo método
 
 public:
-    MessageRec txRec = {};
-
-    // ========== Web Server Interface ==========
+        // ========== Web Server Interface ==========
     static void waitTimeout(const bool ateQueDiferente, const int timeout = 3000);
     static void generateHtmlPage();
     static void generateDeviceListHtmlPage();

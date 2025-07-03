@@ -2,7 +2,11 @@
 #ifdef WIFI
 
 #include <ESPAsyncWebServer.h>
+#ifdef ESP8266
+#include <ESPAsyncTCP.h>
+#else
 #include <AsyncTCP.h>
+#endif
 
 // Definições das variáveis
 AsyncWebSocket wsService("/ws");

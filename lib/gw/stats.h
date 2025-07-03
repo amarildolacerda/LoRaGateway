@@ -12,6 +12,8 @@ public:
     int txCount = 0;
     int rxSuccess = 0;
     int txSuccess = 0;
+    int txErrors = 0;
+    int rxErrors = 0;
 
     void print()
     {

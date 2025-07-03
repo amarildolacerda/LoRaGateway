@@ -1,5 +1,5 @@
 
-#ifndef ALEXACOM_H
+#if !defined(ALEXACOM_H) && defined(ALEXA)
 #define ALEXACOM_H
 
 #ifdef ALEXA
@@ -13,7 +13,7 @@ struct AlexaDeviceMap
     String name;     // Nome do dispositivo
     String uniqueName()
     {
-        return name + String(tid);
+        return name + "_" + String(tid);
         // String a = name + "." + String(tid);
         // a.toLowerCase();
         // return a;
@@ -35,6 +35,7 @@ class AlexaCom
 private:
     void DoCallback(unsigned char device_id, const char *device_name, bool state, unsigned char value);
     void DoGetCallback(unsigned char device_id, const char *device_name);
+    bool isTermostat = false;
 
 public:
     std::vector<AlexaDeviceMap> alexaDevices;
@@ -50,6 +51,9 @@ public:
     void loop();
     void aliveOffLineAlexa();
     void updateStateAlexa(const uint8_t tid, const bool value);
+    void addTermostat(String name);
+    void addTemperature(String name);
+    void setTemperature(String name, float temp);
 
     void addDevice(uint8_t tid, const char *name);
     int indexOf(const uint8_t tid)
@@ -62,7 +66,7 @@ public:
         Logger::warn("Alexa, nao achei o terminal  %d", tid);
         return -1;
     }
-    int findBYAlexaId(unsigned char device_id)
+    int findByAlexaId(unsigned char device_id)
     {
         for (size_t i = 0; i < alexaDevices.size(); i++)
         {

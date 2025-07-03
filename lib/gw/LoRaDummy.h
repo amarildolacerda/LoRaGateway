@@ -1,10 +1,10 @@
 #ifndef LORA_DUMMY_H
 #define LORA_DUMMY_H
-#include "lorainterface.h"
+#include "RadioInterface.h"
 #include "stats.h"
 #include "app_messages.h"
 
-class LoRaDummy : public LoRaInterface
+class LoRaDummy : public RadioInterface
 {
 
 public:
@@ -30,7 +30,7 @@ public:
             MessageRec rec;
             rec.from = 200;
             rec.to = 0; // Broadcast
-            rec.hope = ALIVE_PACKET;
+            rec.hop = ALIVE_PACKET;
             rec.id = ++nHeaderId;
             snprintf(rec.event, sizeof(rec.event), EVT_STATUS);
             if (nHeaderId % 2 == 0)
@@ -53,7 +53,7 @@ public:
     };
     void loop() override
     {
-        LoRaInterface::loop();
+        RadioInterface::loop();
         static long lastReceive = 0;
         if (millis() - lastReceive > 1000)
         {
@@ -61,7 +61,7 @@ public:
             MessageRec rec;
             rec.from = terminalId;
             rec.to = 0xFF; // Broadcast
-            rec.hope = ALIVE_PACKET;
+            rec.hop = ALIVE_PACKET;
             rec.id = ++nHeaderId;
             snprintf(rec.event, sizeof(rec.event), EVT_PING);
             snprintf(rec.value, sizeof(rec.value), "dummy");

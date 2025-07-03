@@ -15,12 +15,10 @@ namespace Config
 {
     constexpr const char *TIMEZONE = "BRT3BRST";
     constexpr const char *ALEXA_TERMOSTATO = "Termostato";
+#ifndef ALEXA_MAX_CLIENTS
     constexpr const uint8_t ALEXA_MAX_CLIENTS = 10;
-
-#ifdef RF95
-    constexpr const uint8_t LORA_RX_PIN = 10; // RX pin for RF95
-    constexpr const uint8_t LORA_TX_PIN = 11; // TX pin for RF95
 #endif
+
     // Hardware - Pinos LoRa (TTGO LoRa32 v1)
 
 #ifdef TTGO
@@ -38,6 +36,10 @@ namespace Config
     constexpr const uint32_t LORA_BAND = 868E6; // usado esp32 TTGO LoRa32 v1
 #elif RF95
     constexpr const uint32_t LORA_BAND = 868.0; // usado RF95
+#elif defined(NRF24)
+    constexpr const int LORA_BAND = 76;
+#else
+    constexpr const uint32_t LORA_BAND = 0; // nao usado
 #endif
 
     constexpr const uint16_t LORA_SYNC_WORD = 0x12;
@@ -55,7 +57,7 @@ namespace Config
     // Rede
     constexpr const uint16_t WEBSERVER_PORT = 80;
     constexpr const uint16_t WIFI_TIMEOUT_S = 180;
-    constexpr const char *WIFI_AP_NAME = "TTGO_Transmitter";
+    constexpr const char *WIFI_AP_NAME = "transmitter";
     constexpr const char *NTP_SERVER = "pool.ntp.org";
     constexpr long GMT_OFFSET_SEC = -10800; // UTC-3 (Brasília)
     constexpr const int DAYLIGHT_OFFSET_SEC = 0;
@@ -66,10 +68,6 @@ namespace Config
     constexpr const uint32_t STATE_CHECK_INTERVAL = 30000;
     constexpr const uint32_t PRESENTATION_INTERVAL = 60000;
     constexpr const uint32_t COMMAND_TIMEOUT = 3000;
-
-    // Tuya IoT
-    constexpr const char *LPID = "sshilmfl"; // Substituir pelo PID real
-    constexpr const char *LMCU_VER = "1.0";
 
 }
 

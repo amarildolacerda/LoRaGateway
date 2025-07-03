@@ -1,1 +1,0 @@
-python ./monitor.py 192.168.15.28 -p 80

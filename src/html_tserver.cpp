@@ -15,6 +15,9 @@
 #include <Update.h>
 #endif
 
+#include "ExtraQueue.h"
+#include "WifiConn.h"
+
 // Inicialização do membro estático
 AsyncWebServer *HtmlServer::espServer = nullptr;
 
@@ -64,7 +67,8 @@ String HtmlServer::generateMenu()
     html += "<a href='/' class='menu-item'>Home</a>";
     html += "<a href='/ota' class='menu-item'>OTA Update</a>";
     html += "<a href='/restart' class='menu-item'>Reiniciar</a>";
-    html += "<a href='/discovery' class='menu-item' id='discovery-btn'>Novo</a>";
+    html += "<a href='/discovery' class='menu-item' id='discovery-btn'>+Add</a>";
+    html += "<a href='/change' class='menu-item' id='discovery-btn'>Config</a>";
     html += "</div>";
     // Adiciona o script para controlar o modo de descoberta
     html += "<script>"
@@ -354,9 +358,7 @@ void HtmlServer::handleToggleDevice(AsyncWebServerRequest *request)
 
     if (action != EVT_STATUS)
     {
-        htmlServer.txRec.to = tid;
-        sprintf(htmlServer.txRec.event, EVT_GPIO);
-        sprintf(htmlServer.txRec.value, action.c_str());
+        txExtraQueue.push(tid, EVT_GPIO, action.c_str(), TERMINAL_ID, 3);
         Logger::info("WS %d %s", tid, action);
     }
 
@@ -382,6 +384,13 @@ void HtmlServer::initWebServer(AsyncWebServer *server)
 
     // Rotas principais
     espServer->on("/", HTTP_GET, handleRootRequest);
+    espServer->on("/home", HTTP_GET, handleRootRequest);
+    espServer->on("/change", HTTP_GET, [](AsyncWebServerRequest *request)
+                  {
+                    request->send(200, "text/plain", "Portal de config iniciado. Conecte-se ao AP ESP32-Config para alterar a rede.");
+                    
+                    wifiConn.changeNetwork(); });
+
     espServer->on("/device", HTTP_GET, handleDeviceDetailsRequest);
     espServer->on("/ctlDevice", HTTP_POST, [](AsyncWebServerRequest *request)
                   { handleToggleDevice(request); });
@@ -401,6 +410,13 @@ void HtmlServer::initWebServer(AsyncWebServer *server)
                       request->redirect("/");
                       delay(1000);
                       ESP.restart(); });
+    espServer->on("/resetWifi", HTTP_GET, [](AsyncWebServerRequest *request)
+                  {
+                      request->redirect("/");
+                      delay(1000);
+                      wifiConn.resetWifi();
+                      ESP.restart(); });
+
     espServer->on("/discovery", HTTP_POST, [](AsyncWebServerRequest *request)
                   {
                       if (request->hasArg("enable")) {

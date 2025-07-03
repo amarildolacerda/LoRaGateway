@@ -25,6 +25,8 @@ namespace Texts
     String center(String text, int width, char fillChar = ' ');
 
     String format(const char *format, ...);
+    String humanizedNumber(unsigned long num);
+    String humanizedUptime(int32_t detailBefore = 60);
 
 } // namespace Texts
 

@@ -1,6 +1,6 @@
 // Compiler: The project is compiled with the ESP-IDF toolchain for ESP32/ESP8266.
 // Platform: The project is designed to run on the ESP32/ESP8266 platform.
-#ifndef DISPPLAY_MANAGER_H
+#if !defined(DISPPLAY_MANAGER_H) && defined(DISPLAY_ENABLED)
 #define DISPPLAY_MANAGER_H
 
 #ifdef DISPLAY_ENABLED
@@ -89,48 +89,6 @@ public:
     }
 
 private:
-    String humanizedUptime(int32_t detailBefore = 60)
-    {
-        unsigned long now = millis();
-        unsigned long seconds = now / 1000;
-        unsigned long minutes = seconds / 60;
-        unsigned long hours = minutes / 60;
-
-        seconds %= 60;
-        minutes %= 60;
-
-        char buffer[20]; // Buffer suficiente para todas as combinações
-
-        if (hours > 0)
-        {
-            if (minutes > 0)
-            {
-                snprintf(buffer, sizeof(buffer), "%luh%02lum", hours, minutes);
-            }
-            else
-            {
-                snprintf(buffer, sizeof(buffer), "%luh", hours);
-            }
-        }
-        else if (minutes >= detailBefore)
-        {
-            snprintf(buffer, sizeof(buffer), "%lumin", minutes);
-        }
-        else
-        {
-            // Mostra minutos e segundos quando menos de 10 minutos
-            if (minutes > 0)
-            {
-                snprintf(buffer, sizeof(buffer), "%lum%02lus", minutes, seconds);
-            }
-            else
-            {
-                snprintf(buffer, sizeof(buffer), "%lus", seconds);
-            }
-        }
-
-        return String(buffer);
-    }
     void _showFooter()
     {
         disp.fillRect(0, Config::SCREEN_HEIGHT - 12, Config::SCREEN_WIDTH, Config::SCREEN_HEIGHT);
@@ -146,7 +104,7 @@ private:
         disp.print((String)systemState.terminalId);
 #endif
 
-        disp.print(Texts::center(String(ps) + "ps", 10));
+        disp.print(Texts::center(Texts::humanizedNumber(ps) + "ps", 10));
         disp.setPos(6, 16);
         disp.println(isoDateTime.substring(11, 16)); // Mostra apenas HH:MM:SS
         disp.setTextColor(WHITE, BLACK);
@@ -174,7 +132,7 @@ private:
         disp.print(" ");
         disp.println((String)rssi);
         disp.setPos(1, 16);
-        disp.println(Texts::left(humanizedUptime(10), 5)); //  startedISODateTime.substring(11, 16)); // Mostra apenas HH:MM:SS
+        disp.println(Texts::left(Texts::humanizedUptime(10), 5)); //  startedISODateTime.substring(11, 16)); // Mostra apenas HH:MM:SS
 
 #ifdef ESP32
         static long tempUpdate = 0;
@@ -199,13 +157,21 @@ private:
         }
         else
         {
-            disp.setPos(4, 0);
             if (loraRcvEvent.length() > 0)
             {
-                disp.println("Term: " + loraRcvEvent);
+                disp.setPos(4, 0);
+                disp.println("De: " + loraRcvEvent);
                 // loraRcvEvent = ""; // Limpa o evento após exibir
             }
         }
+#else
+        if (loraRcvEvent.length() > 0)
+        {
+            disp.setPos(4, 0);
+            disp.println("De: " + loraRcvEvent);
+            // loraRcvEvent = ""; // Limpa o evento após exibir
+        }
+
 #endif
 
         /*else */

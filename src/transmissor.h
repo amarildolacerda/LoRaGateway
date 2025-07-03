@@ -35,6 +35,7 @@ WorkingProto proto;
 static void alexaDeviceCallback(uint8_t tid, const char *device_name, bool state, unsigned char value)
 {
     for (auto &lora : proto.getRadios())
+        // if (deviceInfo.hasTerminal(tid, lora))
         lora->send(tid, EVT_GPIO, state ? GPIO_ON : GPIO_OFF);
 }
 #endif

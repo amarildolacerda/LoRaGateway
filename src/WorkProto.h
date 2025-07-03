@@ -231,26 +231,23 @@ public:
         Logger::debug("Handling event %s from device %d", rec.event, rec.from);
 #endif
 
-        if (systemState.isGateway)
+        if (RELAY_PIN > 0)
         {
             if (strcmp(rec.event, EVT_GPIO) == 0)
             {
                 if (strcmp(rec.value, GPIO_ON) == 0)
                 {
-                    if (RELAY_PIN > 0)
-                        digitalWrite(RELAY_PIN, HIGH);
+                    digitalWrite(RELAY_PIN, HIGH);
                     Logger::warn("Mudou para ON");
                 }
                 else if (strcmp(rec.value, GPIO_OFF) == 0)
                 {
-                    if (RELAY_PIN > 0)
-                        digitalWrite(RELAY_PIN, LOW);
+                    digitalWrite(RELAY_PIN, LOW);
                     Logger::warn("Mudou para OFF");
                 }
                 else if (strcmp(rec.value, GPIO_TOGGLE) == 0)
                 {
-                    if (RELAY_PIN > 0)
-                        digitalWrite(RELAY_PIN, !digitalRead(RELAY_PIN));
+                    digitalWrite(RELAY_PIN, !digitalRead(RELAY_PIN));
                 }
                 else
                 {

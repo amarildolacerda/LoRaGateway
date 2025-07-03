@@ -23,6 +23,10 @@ struct DeviceData
     {
         return String(tid);
     }
+    bool equal(LoRaCom *rd)
+    {
+        return radio == rd;
+    }
     ~DeviceData()
     {
         if (radio)
@@ -56,6 +60,15 @@ public:
             }
         }
         return n;
+    }
+    bool hasTerminal(uint8_t tid, LoRaCom *lora)
+    {
+        for (auto &dev : list)
+        {
+            if (dev.tid == tid && dev.equal(lora))
+                return true;
+        }
+        return false;
     }
     uint8_t size()
     {

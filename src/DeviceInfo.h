@@ -80,7 +80,7 @@ public:
         }
         list.push_back(device);
     }
-    void updateState(uint8_t tid, bool state)
+    void updateState(LoRaCom *lora, uint8_t tid, bool state)
     {
         for (auto &device : list)
         {
@@ -88,6 +88,8 @@ public:
             {
                 device.state = state;
                 device.lastSeen = millis();
+                if (!device.getRadio())
+                    device.setRadio(lora);
                 return;
             }
         }
@@ -97,6 +99,7 @@ public:
         newDevice.lastSeen = millis();
         newDevice.rssi = 0;                    // Default RSSI value
         newDevice.name = "Novo" + String(tid); // Default name
+        newDevice.setRadio(lora);
         list.push_back(newDevice);
     }
 
@@ -158,6 +161,13 @@ public:
             }
         }
         return -1; // Return -1 if not found
+    }
+    LoRaCom *radioOf(uint8_t tid)
+    {
+        int idx = indexOf(tid);
+        if (idx < 0)
+            return nullptr;
+        return list[idx].getRadio();
     }
     void updateDeviceName(const uint8_t tid, String name)
     {

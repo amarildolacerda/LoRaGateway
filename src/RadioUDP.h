@@ -130,8 +130,6 @@ public:
         MessageRec rec;
         char resp[MESSAGE_MAX_LEN] = {0};
         memcpy(resp, packet.data(), packet.length());
-        Serial.println(resp + 5);
-        Serial.println(packet.length());
         if (packet.length() < MESSAGE_MAX_LEN)
         {
             // Print message content starting from offset 5; adjust offset if necessary

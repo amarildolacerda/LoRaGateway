@@ -58,24 +58,7 @@ public:
     }
     void loop()
     {
-#ifdef WS
-        MessageRec rec;
-        if (txExtraQueue.popItem(rec))
-            LoRaCom::send(rec.to, rec.event, rec.value);
-
-#endif
         radio->loop();
-#ifdef BROADCAST
-        broadcast->loop();
-#ifdef GATEWAY
-        static long broadcastUpdate = 0;
-        if (broadcastUpdate == 0 || millis() - broadcastUpdate > 10000)
-        {
-            broadcast->sendBroadcastRequest();
-            broadcastUpdate = millis();
-        }
-#endif
-#endif
     }
     void sendPresentation(const uint8_t tid)
     {

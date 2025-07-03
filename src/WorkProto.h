@@ -68,6 +68,17 @@ public:
     void loop()
     {
 
+#ifdef WS
+        MessageRec rec;
+        if (txExtraQueue.popItem(rec))
+        {
+            LoRaCom *lora = deviceInfo.radioOf(rec.to);
+            if (lora)
+                lora->send(rec.to, rec.event, rec.value);
+        }
+
+#endif
+
         for (auto &lora : radios)
         {
             lora->loop();
@@ -188,14 +199,14 @@ public:
     {
         lora->send(to, b ? EVT_ACK : EVT_NAK, TERMINAL_NAME, TERMINAL_ID, seq);
     }
-    void executeStatus(const MessageRec rec)
+    void executeStatus(LoRaCom *lora, const MessageRec rec)
     {
         // gerar historico
         // notificar alexa
 
         bool status = strcmp(rec.value, "on") == 0;
 #ifdef GATEWAY
-        deviceInfo.updateState(rec.from, status);
+        deviceInfo.updateState(lora, rec.from, status);
 #endif
 #ifdef ALEXA
         if (rec.from != 0xFF && rec.from != 0xFE)
@@ -294,7 +305,7 @@ public:
             else
             {
                 ackNak(lora, rec.from, true, rec.id); // na estacao avisa que pode ficar transquila
-                executeStatus(rec);
+                executeStatus(lora, rec);
             }
             return;
         }

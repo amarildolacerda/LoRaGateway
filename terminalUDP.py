@@ -21,7 +21,7 @@ def format_message(message):
 
 def listen_for_messages(udp_socket, term):
     """Escuta mensagens UDP e responde conforme o protocolo."""
-    global message_id
+    global message_id, state
     
     print(Fore.CYAN + f"Escutando mensagens UDP na porta {BROADCAST_PORT}...")
     
@@ -49,6 +49,15 @@ def listen_for_messages(udp_socket, term):
                 response = bytes([from_, term, message_id, length, hop-1]) + b"{pong|ok}\n"
             elif "pub" in payload:
                 response = bytes([from_, term, message_id, length, hop-1]) + b"{pub|ok}\n"
+            elif "gp|on" in payload:
+                state = "on"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+            elif "gp|off" in payload:
+                state = "off"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
+            elif "gp|toggle" in payload:
+                state = "off" if state == "on" else "on"
+                response = bytes([from_, term, message_id, length, hop-1]) + b"{ack|ok}\n"
             elif "ack" in payload:
                 continue   
             else:
@@ -67,7 +76,6 @@ def send_periodic_status(udp_socket, term, server_addr=None):
     while True:
         try:
             message_id = (message_id + 1) % 256
-            state = "off" if state == "on" else "on"
             
             # Monta a mensagem no formato esperado pelo RadioUDP
             response = bytes([0x00, term, message_id, 0x05, 0x03]) + f"{{st|{state}}}\n".encode()

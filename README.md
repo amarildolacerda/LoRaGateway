@@ -2,7 +2,7 @@
 /*
 
 
-# **Documentação do Projeto: Transmissor TTGO LoRa32 com Tuya IoT**
+# **Documentação do Projeto: Transmissor/Terminal**
 ## **Objetivo**
 Este projeto implementa um transmissor usando a placa **TTGO LoRa32**, capaz de:
 1. Enviar comandos via LoRa para um receptor (ex.: LIGAR, DESLIGAR, STATUS, REVERTER).

@@ -7,8 +7,7 @@
 Este projeto implementa um transmissor usando a placa **TTGO LoRa32**, capaz de:
 1. Enviar comandos via LoRa para um receptor (ex.: LIGAR, DESLIGAR, STATUS, REVERTER).
 2. Solicitar automaticamente o status do receptor a cada minuto.
-3. Integrar com a plataforma **Tuya IoT** para controle remoto e pareamento do dispositivo.
-4. Exibir o status da última transmissão em um **display OLED** embutido.
+3. Exibir o status da última transmissão em um **display OLED** embutido.
 
 ---
 
@@ -30,9 +29,7 @@ Este projeto implementa um transmissor usando a placa **TTGO LoRa32**, capaz de:
   - `WiFiManager`: Configuração WiFi.
   - `Adafruit_GFX` e `Adafruit_SSD1306`: Controle do display OLED.
   - `time.h`: Sincronização de horário via NTP.
-  - `Tuya_WiFi_MCU_SDK`: Integração com Tuya IoT.
-  - `ArduinoJson`: Criação e processamento de mensagens JSON.
-
+ 
 ---
 
 ## **Características Funcionais**

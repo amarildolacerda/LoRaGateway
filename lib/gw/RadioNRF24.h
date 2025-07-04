@@ -103,7 +103,7 @@ public:
         stats.txCount++;
         // char msg[MESSAGE_MAX_LEN] = {0};
         // size_t len = rec.encode(msg, MESSAGE_MAX_LEN);
-        rec.print();
+        // rec.print();
         // Serial.println(msg + 5);
         // if (len == 0)
         //     return false;
@@ -128,35 +128,22 @@ public:
     {
         MessageRec rec;
         uint8_t pipe;
+        bool rt = false;
         if (radio.available(&pipe))
         {                                           // is there a payload? get the pipe number that received it
             uint8_t bytes = radio.getPayloadSize(); // get the size of the payload
-            // char msg[MESSAGE_MAX_LEN] = {0};
             radio.read(&rec, bytes);
 
-            // if (!rec.decode(msg))
             if (rec.len < 3 || (rec.to == rec.from) || rec.hop > 32)
             {
                 if (isConnected())
                     Logger::error("Mensagem mal formada: %d: %s %s", rec.from, rec.event, rec.value);
                 return false;
             }
-            rec.print();
-            // #endif
-            if (rec.from == terminalId)
-                return false;
-            if (rec.to == terminalId || rec.to == 0xFF)
-            {
-                stats.rxCount++;
-                log(false, rec);
-
-                return rxQueue.pushItem(rec);
-            }
-            if (rec.to != terminalId)
-                meshMessage(rec);
-            return true;
+            rt = addRxMessage(rec);
+            meshMessage(rec);
         }
-        return false;
+        return rt;
     }
 
     // Função adicional para mudança de canal dinâmica

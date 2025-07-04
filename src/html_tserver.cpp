@@ -142,7 +142,7 @@ void HtmlServer::generateHomePage(AsyncWebServerRequest *request)
     html += "<script>";
     html += "async function updateAllStatuses() {";
     html += "  try {";
-    html += "    const res = await fetch('/batchStatus', { method: 'GET' });";
+    html += "    const res = await fetch('/status', { method: 'GET' });";
     html += "    if (res.ok) {";
     html += "      const data = await res.json();";
     html += "      data.devices.forEach(device => {";
@@ -223,7 +223,7 @@ void HtmlServer::generateDeviceDetailsPage(AsyncWebServerRequest *request, uint8
         html += "<script>";
         html += "async function updateDeviceInfo() {";
         html += "  try {";
-        html += "    const res = await fetch('/batchStatus', { method: 'GET' });";
+        html += "    const res = await fetch('/status', { method: 'GET' });";
         html += "    if (res.ok) {";
         html += "      const data = await res.json();";
         html += "      const device = data.devices.find(d => d.tid == " + String(rdata.tid) + ");";
@@ -395,7 +395,7 @@ void HtmlServer::initWebServer(AsyncWebServer *server)
     espServer->on("/ctlDevice", HTTP_POST, [](AsyncWebServerRequest *request)
                   { handleToggleDevice(request); });
 
-    espServer->on("/batchStatus", HTTP_GET, [](AsyncWebServerRequest *request)
+    espServer->on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
                   { 
                       //Serial.println("Handling batch status request"); // Debug log
                       handleBatchStatusRequest(request); });

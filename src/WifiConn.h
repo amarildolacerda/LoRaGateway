@@ -87,7 +87,7 @@ private:
         return;
 #else
 
-#ifdef DISPLAY
+#ifdef DISPLAY_ENABLE
         displayManager.showMessage("...connectando");
 #endif
 
@@ -124,7 +124,7 @@ ESP.restart(); });
                                                   // Tenta conectar em background
         if (!wifiManager->autoConnect())
         {
-#ifdef DISPLAY
+#ifdef DISPLAY_ENABLED
             displayManager.showMessage("SSID: gatewayConfig");
 #endif
 

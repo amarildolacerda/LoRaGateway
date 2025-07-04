@@ -1,9 +1,14 @@
 
 #include "RadioInterface.h"
 #include "LoRaCom.h"
+
+#ifdef GATEWAY
 #include "DeviceInfo.h"
-#include "DeviceInfo.h"
+#endif
+
+#ifdef DISPLAY_ENABLED
 #include "DisplayManager.h"
+#endif
 
 #ifdef WIFI
 #include "WifiConn.h"
@@ -47,10 +52,13 @@ public:
     }
     void begin()
     {
+#ifdef GATEWAY
         if (systemState.isGateway && RELAY_PIN > 0)
         {
             deviceInfo.updateDevice(nullptr, 0xFE, TERMINAL_NAME, false, 0);
         }
+#endif
+
         if (systemState.isGateway)
         {
             for (auto &lora : radios)
@@ -80,8 +88,8 @@ public:
             if (lora)
             {
                 if (rec.to == 0xFE && systemState.isGateway)
-                    //handleReceived(lora, rec);
-                    lora->receive(0,rec.event,rec.value);
+                    // handleReceived(lora, rec);
+                    lora->receive(0, rec.event, rec.value);
                 else
                     lora->send(rec.to, rec.event, rec.value);
             }
@@ -328,7 +336,7 @@ public:
 #endif
 #else
             // loraCom.send(rec.from, EVT_PRESENTATION, systemState.terminalName);
-            loraCom.sendPresentation(rec.from);
+            lora->sendPresentation(rec.from);
 #endif
             return;
         }

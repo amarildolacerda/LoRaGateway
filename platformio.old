@@ -46,6 +46,7 @@ build_flags =
 lib_deps = 
     ${HeltecV2.lib_deps}
 
+
 [env:gw_ttgo_lora]
 platform = espressif32
 board = ttgo-lora32-v1
@@ -57,21 +58,25 @@ upload_port = COM4
 board_build.mcu = esp32
 board_build.f_cpu = 240000000L
 build_flags = 
-    -D DEBUG_FAUXMO
-    -D DEBUG_FAUXMO_VERBOSE_UDP
-    -D DEBUG_FAUXMO_VERBOSE_TCP
+    ${ttgo.build_flags}
+    ;-D DEBUG_FAUXMO
+    ;-D DEBUG_FAUXMO_VERBOSE_UDP
+    ;-D DEBUG_FAUXMO_VERBOSE_TCP
     -D TERMINAL_NAME=\"gw\"
     -D TERMINAL_ID=0
-    -D RELAY_PIN=0
+    -D RELAY_PIN=5
     -D TTGO
     -D DISPLAYTTGO
-    -D LORA
+    -D LORA32
+    -D RADIO_UDP
     -D WIFI
     -D WS
     -D DISPLAY_ENABLED
     -D ALEXA
     -D GATEWAY
-    -D DEBUG_ON
+    ;-D DEBUG_ON
+    ;-D WIFIMANAGER
+
 lib_deps = 
     ${ttgo.lib_deps}
     sandeepmistry/LoRa @ ^0.8.0

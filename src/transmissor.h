@@ -34,9 +34,10 @@ WorkingProto proto;
 #ifdef ALEXA
 static void alexaDeviceCallback(uint8_t tid, const char *device_name, bool state, unsigned char value)
 {
-    for (auto &lora : proto.getRadios())
+    proto.foreach ([tid, state](LoRaCom *lora)
+                   {
         // if (deviceInfo.hasTerminal(tid, lora))
-        lora->send(tid, EVT_GPIO, state ? GPIO_ON : GPIO_OFF);
+        lora->send(tid, EVT_GPIO, state ? GPIO_ON : GPIO_OFF); });
 }
 #endif
 
@@ -89,35 +90,35 @@ public:
         }
 
         proto.setup();
-        int8_t pos = 0;
         String ident = "Radio duplex ";
-        for (auto &lora : proto.getRadios())
-        {
-            lora->begin(systemState.terminalId, Config::LORA_BAND, true); // initialize LoRa at 868 MHz
+        proto.foreach ([this](LoRaCom *lora)
+                       {
+                           lora->begin(systemState.terminalId, Config::LORA_BAND, true); // initialize LoRa at 868 MHz
+                       });
 
-            if (pos++ == 0)
-            {
-                systemState.isInitialized = lora->isConnected();
-                Serial.println("Radio started");
-                ident += lora->getIdent();
-                ident += " Term: %d %s";
-            }
-        }
+        LoRaCom *lora = proto.getRadio(0);
+        systemState.isInitialized = lora->isConnected();
+        Serial.println("Radio started");
+        ident += lora->getIdent();
+        ident += " Term: %d %s";
+
         Logger::info(ident.c_str(), TERMINAL_ID, TERMINAL_NAME);
 
         systemState.setDiscovering(true, 30000);
-        for (auto &lora : proto.getRadios())
-            if (systemState.isGateway)
-            {
-                lora->sendPresentation(0xFF); // pede apresentação para os terminais.
-            }
-            else
-            {
-                lora->sendPresentation(0); // se apresenta ao gateway
-            }
+        proto.foreach ([this](LoRaCom *lora)
+                       {
+                           if (systemState.isGateway)
+                           {
+                               lora->sendPresentation(0xFF); // pede apresentação para os terminais.
+                           }
+                           else
+                           {
+                               lora->sendPresentation(0); // se apresenta ao gateway
+                           } });
     }
 
-    void loop()
+    void
+    loop()
     {
         systemState.handle();
         systemState.isRunning = true;

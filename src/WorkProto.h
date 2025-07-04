@@ -38,17 +38,46 @@ LoRaCom radioCom(new RadioDummy());
 LoRaCom radioUDP(new RadioUDP());
 #endif
 
+#if defined(ESP32)
+#include <vector>
+using RadioContainer = std::vector<LoRaCom *>;
+#elif defined(__AVR__)
+#define MAX_RADIOS 1 // Defina o tamanho máximo para AVR
+using RadioContainer = LoRaCom *[MAX_RADIOS];
+#else
+#error "Plataforma não suportada"
+#endif
+
+using LoRaComCallback = void(LoRaCom *);
+
 class WorkingProto
 {
 private:
-    std::vector<LoRaCom *> radios;
+    RadioContainer radios;
     bool mudou = false;
     bool mudouEstado = false;
 
 public:
-    std::vector<LoRaCom *> getRadios()
+    LoRaCom *getRadio(const int idx) { return radios[idx]; }
+    // Implementação do getRadios com callback
+    template <typename F>
+    void foreach (F callback)
     {
-        return radios;
+
+#if defined(ESP32)
+        for (auto *radio : radios)
+        {
+            callback(radio);
+        }
+#elif defined(__AVR__)
+        for (size_t i = 0; i < MAX_RADIOS; i++)
+        {
+            if (radios[i] != nullptr)
+            {
+                callback(radios[i]);
+            }
+        }
+#endif
     }
     void begin()
     {
@@ -72,7 +101,11 @@ public:
     }
     void setup()
     {
+#ifdef __AVR__
+        radios[0] = &radioCom;
+#else
         radios.push_back(&radioCom);
+#endif
 #ifdef RADIO_UDP
         radios.push_back(&radioUDP);
 #endif
@@ -343,10 +376,23 @@ public:
         ackNak(lora, rec.from, true, rec.id);
     }
 
+    int size()
+    {
+#ifdef __AVR__
+        return 1;
+#else
+        return radios.size();
+#endif
+    }
     int addRadio(RadioInterface *rd)
     {
-        int pos = radios.size();
+#ifdef __AVR__
+        // nao suporta
+        return -1;
+#else
+        int pos = size();
         radios.push_back(new LoRaCom(rd));
         return pos;
+#endif
     }
 };

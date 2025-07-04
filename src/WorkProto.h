@@ -38,7 +38,7 @@ LoRaCom radioCom(new RadioDummy());
 LoRaCom radioUDP(new RadioUDP());
 #endif
 
-#if defined(ESP32)
+#if defined(ESP32) || defined(ESP8266)
 #include <vector>
 using RadioContainer = std::vector<LoRaCom *>;
 #elif defined(__AVR__)
